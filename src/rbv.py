@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def html():
-    return redirect("/html/index.html")
+    return redirect("/html/validate.html")
 
 # Validation Service
 @app.route('/validator/v1.1', methods=['GET', 'POST'])
