@@ -3,7 +3,7 @@ import socket
 import sys
 from subprocess import PIPE, Popen
 
-from settings import validator_path,bgp_validator_client,default_cache_server
+from settings import validator_path,bgp_validator_server,default_cache_server
 from util import get_validity_nr, get_validation_message
 
 """
@@ -26,14 +26,18 @@ def validate_v11(request):
     masklen = str(prefix_array[1]).strip()
     asn = str(request.form['asn']).strip()
 
+    remote_addr = "0.0.0.0"
     if request.headers.getlist("X-Forwarded-For"):
         remote_addr = request.headers.getlist("X-Forwarded-For")[0]
     else:
         remote_addr = request.remote_addr
     print "Remote IP: " + remote_addr
-    if request.user_agent:
-        user_agent = request.user_agent
-        print "User agent: " + user_agent
+    #if request.user_agent:
+    #    user_agent = request.user_agent
+    #    print "User agent: " + user_agent
+    #user_agent = request.headers.get('user_agent')
+    #user_agent = request.user_agent
+    #print "User agent: " + user_agent
 
     rbv_host = bgp_validator_server['host']
     rbv_port = int(bgp_validator_server['port'])
@@ -51,14 +55,15 @@ def validate_v11(request):
     print "Socket bind complete"
 
     query = dict()
-    if user_agent:
-        query['user_agent'] = user_agent
-    if client_ip:
-        query['remote_addr'] = remote_addr
+    #if user_agent:
+    #    query['user_agent'] = user_agent
+    #if client_ip:
+    query['remote_addr'] = str(remote_addr)
     query['cache_server'] = cache_server
     query['network'] = network
     query['masklen'] = masklen
     query['asn'] = asn
+    print "query JSON: " + json.dumps(query)
     try:
         s.sendall(json.dumps(query))
         data = s.recv(1024)

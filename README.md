@@ -14,7 +14,8 @@ these can be installed using `pip`:
 external tools:
  - cli-validator from [rtrlib]
 
-Build `cli-validator` as described in [./src/util/UTIL.md].
+Build `cli-validator` as described in [./src/util/UTIL.md] and copy its
+compiled binary into `<path/to/RBV>/src/util`.
 
 ## stand alone server
 
