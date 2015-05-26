@@ -4,7 +4,7 @@ from flask.globals import request
 from flask.templating import render_template
 from werkzeug.utils import redirect
 import handler
-app = Flask(__name__)
+app = Flask(__name__, static_folder="html")
 
 @app.route('/')
 def html():

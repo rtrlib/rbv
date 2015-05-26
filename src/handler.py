@@ -31,10 +31,11 @@ def validate_v11(request):
     print 'Socket created'
     #Bind socket to local host and port
     try:
-        s.bind((rbv_host, rbv_port))
+        s.connect((rbv_host, rbv_port))
     except socket.error as msg:
         print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
-        sys.exit()
+        s.close()
+        return "Error connecting to bgp validator!"
     print 'Socket bind complete'
     query = dict()
     query['cache_server'] = cache_server
@@ -44,14 +45,18 @@ def validate_v11(request):
     try:
         s.sendall(json.dumps(query))
         data = s.recv(1024)
-        resp = json.loads(data)
-        if validity in resp:
-            validity_nr = resp['validity']
     except Exception, e:
         print "Error sending query."
+    else:
+        try:
+            resp = json.loads(data)
+        except:
+            print "Error decoding JSON!"
+        else:
+            if 'validity' in resp:
+                validity_nr = resp['validity']
     finally:
         s.close()
-
     return json.dumps({"code":validity_nr,
                        "message":get_validation_message(validity_nr)})
 

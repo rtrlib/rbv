@@ -16,7 +16,7 @@ def get_validity_nr(validation_result_string):
         return -103
 
     if validation_result_string == "input error":
-        return -103
+        return -104
 
     validation_result_array = validation_result_string.split("|")
 
@@ -52,6 +52,8 @@ def get_validation_message(validity_nr):
         validity = "Invalid Validation Result"
     elif validity_nr == "-103":
         validity = "Cache Server Error"
+    elif validity_nr == "-104":
+        validity = "Cache Server Input Error"
     else:
         validity = "Unknown Error"
     return validity

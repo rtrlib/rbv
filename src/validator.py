@@ -22,7 +22,7 @@ import socket
 import sys
 import traceback
 
-from util import get_validity_nr
+from util import get_validity_nr, get_validation_message
 
 thread_timeout = 300
 lock = Lock()
@@ -46,7 +46,6 @@ def main():
     #Start listening on socket
     s.listen(10)
     print 'Socket now listening'
-
     while True:
         #wait to accept a connection - blocking call
         conn, addr = s.accept()
@@ -126,6 +125,8 @@ def validator_thread(queue, cache_server):
             validity_nr =  get_validity_nr(validation_result)
             if validity_nr == -102:
                 continue
+            elif (validity_nr == -103) or (validity_nr == -101):
+                print(cache_server + " -> " + get_validation_message(validity_nr))
             else:
                 print(cache_server + " -> " + network + "/" + masklen +
                         "(AS" + asn + ") -> " + str(validity_nr))
@@ -140,6 +141,7 @@ def validator_thread(queue, cache_server):
         try:
             conn.sendall(json.dumps(resp)+'\n')
             conn.close()
+            conn = None
         except:
             print "Error sending validation response!"
         else:
