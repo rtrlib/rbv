@@ -1,5 +1,4 @@
-from flask import Flask
-from flask import Response, session
+from flask import Flask, Response, session
 from flask.globals import request
 from flask.templating import render_template
 from werkzeug.utils import redirect
@@ -28,7 +27,7 @@ def online_validator_v10():
     # example:  63.245.214.0/23
     prefix_array = prefix.split("/")
     if len(prefix_array) != 2:
-        return "Invalid BGP Prefix"
+        return "Invalid BGP prefix"
     mask = str(prefix_array[1]).strip()
     asn = str(request.form['asn']).strip()
     # example: 36856

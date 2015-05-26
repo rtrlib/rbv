@@ -10,18 +10,19 @@ the validation result is written back to the database. This can be then sent bac
 extension.
 
 """
-from settings import validator_path,bgp_validator_server
 
-from datetime import datetime
-from subprocess import PIPE, Popen
-from threading import Lock
-from thread import start_new_thread
 import json
 import Queue
 import socket
 import sys
 import traceback
 
+from datetime import datetime
+from subprocess import PIPE, Popen
+from threading import Lock
+from thread import start_new_thread
+
+from settings import validator_path,bgp_validator_server
 from util import get_validity_nr, get_validation_message
 
 thread_timeout = 300
@@ -30,31 +31,36 @@ validator_threads = {}
 validator_thread_queues = {}
 validator_thread_timeouts = {}
 
+"""
+main
+"""
 def main():
     rbv_host = bgp_validator_server['host']
     rbv_port = int(bgp_validator_server['port'])
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print 'Socket created'
+    print "Socket created"
     #Bind socket to local host and port
     try:
         s.bind((rbv_host, rbv_port))
     except socket.error as msg:
-        print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+        print "Bind failed. Error Code : " + str(msg[0]) + " Message " + msg[1]
         sys.exit()
-    print 'Socket bind complete'
+    print "Socket bind complete"
     #Start listening on socket
     s.listen(10)
-    print 'Socket now listening'
+    print "Socket now listening"
     while True:
         #wait to accept a connection - blocking call
         conn, addr = s.accept()
-        print 'Connected with ' + addr[0] + ':' + str(addr[1])
+        print "Connected with " + addr[0] + ":" + str(addr[1])
         start_new_thread(client_thread, (conn,))
 
     s.close()
 
 """
+cache_server_valid
+
 This function should be extended to check cache server validity more profoundly.
 """
 def cache_server_valid(cache_server):
@@ -70,7 +76,7 @@ def cache_server_valid(cache_server):
             return False
 
 """
-    client_thread
+client_thread
 """
 def client_thread(conn):
     data = conn.recv(1024)
@@ -108,7 +114,7 @@ def client_thread(conn):
         validator_thread_queues[cache_server].put(query)
 
 """
-    validator_thread
+validator_thread
 """
 def validator_thread(queue, cache_server):
     cache_host = cache_server.split(":")[0]
@@ -116,7 +122,6 @@ def validator_thread(queue, cache_server):
     cache_cmd = [validator_path, cache_host, cache_port]
     validator_process = Popen(cache_cmd, stdin=PIPE, stdout=PIPE)
     print "Started validator thread (%s)" % cache_server
-    #print "Status: %s" % (validator_process.stdout.readline().strip())
     while True:
         validation_entry = queue.get(True)
         conn    = validation_entry['conn']

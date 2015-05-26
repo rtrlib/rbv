@@ -6,6 +6,9 @@ from subprocess import PIPE, Popen
 from settings import validator_path,bgp_validator_client,default_cache_server
 from util import get_validity_nr, get_validation_message
 
+"""
+validate_v11
+"""
 def validate_v11(request):
     if "cache_server" not in request.form:
         return "No cache server defined."
@@ -24,28 +27,34 @@ def validate_v11(request):
     asn = str(request.form['asn']).strip()
 
     if request.headers.getlist("X-Forwarded-For"):
-        client_ip = request.headers.getlist("X-Forwarded-For")[0]
+        remote_addr = request.headers.getlist("X-Forwarded-For")[0]
     else:
-        client_ip = request.remote_addr
-    user_agent = request.user_agent
-    print "Client IP " + client_ip
+        remote_addr = request.remote_addr
+    print "Remote IP: " + remote_addr
+    if request.user_agent:
+        user_agent = request.user_agent
+        print "User agent: " + user_agent
 
     rbv_host = bgp_validator_server['host']
     rbv_port = int(bgp_validator_server['port'])
     validity_nr = "-1"
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print 'Socket created'
+    print "Socket created"
     #Bind socket to local host and port
     try:
         s.connect((rbv_host, rbv_port))
     except socket.error as msg:
-        print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+        print "Bind failed. Error Code : " + str(msg[0]) + " Message " + msg[1]
         s.close()
         return "Error connecting to bgp validator!"
-    print 'Socket bind complete'
+    print "Socket bind complete"
+
     query = dict()
-    query = ['']
+    if user_agent:
+        query['user_agent'] = user_agent
+    if client_ip:
+        query['remote_addr'] = remote_addr
     query['cache_server'] = cache_server
     query['network'] = network
     query['masklen'] = masklen
@@ -68,13 +77,15 @@ def validate_v11(request):
     return json.dumps({"code":validity_nr,
                        "message":get_validation_message(validity_nr)})
 
+"""
+validate_v10
+"""
 def validate_v10(ip, mask, asn):
     host = default_cache_server["host"]
     port = default_cache_server["port"]
     cmd = [validator_path, host, port]
     cproc = Popen(cmd, stdin=PIPE, stdout=PIPE)
     bgp_entry_str = ip + " " + mask + " " + asn
-    #validation_result_string = cproc.communicate(bgp_entry_str + '\n')[0]
     cproc.stdin.write(bgp_entry_str + '\n')
     validation_result_string = cproc.stdout.readline().strip()
     cproc.kill()

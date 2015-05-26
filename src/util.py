@@ -1,4 +1,6 @@
 """
+get_validity_nr
+
 Parse the validation result string from the validator C program (uses rtrlib),
 and return the validation number, which is:
   * -1 (Not Found) or
@@ -33,6 +35,8 @@ def get_validity_nr(validation_result_string):
     return validity_nr
 
 """
+get_validation_message
+
 Return a validation message based on the validation number.
 """
 def get_validation_message(validity_nr):
