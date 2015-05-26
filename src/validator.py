@@ -69,7 +69,9 @@ def cache_server_valid(cache_server):
         except:
             return False
 
-#Function for handling connections. This will be used to create threads
+"""
+    client_thread
+"""
 def client_thread(conn):
     data = conn.recv(1024)
     try:
@@ -105,6 +107,9 @@ def client_thread(conn):
             lock.release()
         validator_thread_queues[cache_server].put(query)
 
+"""
+    validator_thread
+"""
 def validator_thread(queue, cache_server):
     cache_host = cache_server.split(":")[0]
     cache_port = cache_server.split(":")[1]
@@ -141,7 +146,6 @@ def validator_thread(queue, cache_server):
         try:
             conn.sendall(json.dumps(resp)+'\n')
             conn.close()
-            conn = None
         except:
             print "Error sending validation response!"
         else:
