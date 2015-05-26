@@ -3,7 +3,10 @@ from flask import Response, session
 from flask.globals import request
 from flask.templating import render_template
 from werkzeug.utils import redirect
+
 import handler
+from settings import www_validator_server
+
 app = Flask(__name__, static_folder="html")
 
 @app.route('/')
@@ -33,4 +36,5 @@ def online_validator_v10():
     return result_string
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host=www_validator_server['host'],
+            port=int(www_validator_server['port']))

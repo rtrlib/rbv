@@ -23,8 +23,15 @@ def validate_v11(request):
     masklen = str(prefix_array[1]).strip()
     asn = str(request.form['asn']).strip()
 
-    rbv_host = bgp_validator_client['host']
-    rbv_port = int(bgp_validator_client['port'])
+    if request.headers.getlist("X-Forwarded-For"):
+        client_ip = request.headers.getlist("X-Forwarded-For")[0]
+    else:
+        client_ip = request.remote_addr
+    user_agent = request.user_agent
+    print "Client IP " + client_ip
+
+    rbv_host = bgp_validator_server['host']
+    rbv_port = int(bgp_validator_server['port'])
     validity_nr = "-1"
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -38,6 +45,7 @@ def validate_v11(request):
         return "Error connecting to bgp validator!"
     print 'Socket bind complete'
     query = dict()
+    query = ['']
     query['cache_server'] = cache_server
     query['network'] = network
     query['masklen'] = masklen
