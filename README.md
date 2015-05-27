@@ -28,8 +28,8 @@ server or with apache integration - some configuration steps are required.
 3. build RTRlib and its tools, see above or [src/util/UTIL.md](src/util/UTIL.md)
 4. copy `cli-validator` binary into RBV, as described above
 5. if necessary, modify [src/html/validate.html](src/html/validate.html),
-   changing `localhost:5000` in URL in all form-tags to URL (FQDN) of your
-   server.
+   changing `localhost:5000` in *action* attribute of all HTML form-tags to the
+   URL (FQDN) of your server.
 6. review [src/settings.py](src/settings.py) and modify entries accordingly
 7. install python requirements using pip, see above
 8. start the bgp-validator daemon: `python validator.py`
@@ -47,7 +47,7 @@ If you want public access modify `www_validator_server` entry in
 host = `0.0.0.0` or specify a distinct interace IP address. You may also modify
 the port, however ports below 1024 need system/root rights!
 
-Note: for stand-alone server you can also you [python-virtualenv][virtualenv].
+Note: for stand-alone server you can also use [python-virtualenv][virtualenv].
 
 ## apache integration
 
