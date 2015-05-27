@@ -8,13 +8,13 @@ Python modules:
 
 these can be installed using `pip`:
 ```
- $ cd <path/to/RBV>/src
- $ pip install -r requirements.txt
+$ cd <path/to/RBV>/src
+$ pip install -r requirements.txt
 ```
 external tools:
  - cli-validator from [rtrlib]
 
-Build `cli-validator` as described in (src/util/UTIL.md) and copy its
+Build `cli-validator` as described in [src/util/UTIL.md](src/util/UTIL.md) and copy its
 compiled binary into `<path/to/RBV>/src/util`.
 
 ## deployment and configuration
@@ -24,11 +24,11 @@ server or with apache integration - some configuration steps are required.
 
 1. clone the [rbv] repository from github
 2. clone the [rtrlib] repo from github, too
-3. build RTRlib and its tools, see above or (src/util/UTIL.md)
+3. build RTRlib and its tools, see above or [src/util/UTIL.md](src/util/UTIL.md)
 4. copy `cli-validator` binary into RBV, as described above
-5. if necessary, modify (src/html/validate.html), changing `localhost:5000`
-   in URL in all <form>-tags to URL (FQDN) of your server.
-6. review (src/settings.py) and modify entries accordingly
+5. if necessary, modify [src/html/validate.html](src/html/validate.html), changing `localhost:5000`
+   in URL in all form-tags to URL (FQDN) of your server.
+6. review [src/settings.py](src/settings.py) and modify entries accordingly
 7. that's it!
 
 ## stand-alone server
