@@ -61,3 +61,20 @@ def get_validation_message(validity_nr):
     else:
         validity = "Unknown Error"
     return validity
+
+"""
+cache_server_valid
+
+This function should be extended to check cache server validity more profoundly.
+"""
+def cache_server_valid(cache_server):
+        try:
+            if len(cache_server.split(":")) != 2:
+                return False
+            host = cache_server.split(":")[0]
+            port = int(cache_server.split(":")[1])
+            if len(host)<1 or port<0:
+                return False
+            return True
+        except:
+            return False

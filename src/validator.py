@@ -21,15 +21,14 @@ from datetime import datetime
 from subprocess import PIPE, Popen
 from threading import Lock
 from thread import start_new_thread
+from time import sleep
 
-from settings import validator_path,bgp_validator_server
-from util import get_validity_nr, get_validation_message
+from settings import validator_path,bgp_validator_server, maintenance_timeout
+from util import get_validity_nr, get_validation_message, cache_server_valid
 
 thread_timeout = 300
-lock = Lock()
+validator_threads_lock = Lock()
 validator_threads = {}
-validator_thread_queues = {}
-validator_thread_timeouts = {}
 
 """
 main
@@ -50,6 +49,7 @@ def main():
     #Start listening on socket
     s.listen(10)
     print "Socket now listening"
+    start_new_thread(maintenance_thread, ())
     while True:
         #wait to accept a connection - blocking call
         conn, addr = s.accept()
@@ -59,24 +59,43 @@ def main():
     s.close()
 
 """
-cache_server_valid
+maintenance_thread
 
-This function should be extended to check cache server validity more profoundly.
+    - periodically checks all running validation threads
 """
-def cache_server_valid(cache_server):
+def maintenance_thread():
+    print "START maintenance_thread"
+    while True:
         try:
-            if len(cache_server.split(":")) != 2:
-                return False
-            host = cache_server.split(":")[0]
-            port = int(cache_server.split(":")[1])
-            if len(host)<1 or port<0:
-                return False
-            return True
-        except:
-            return False
+            validator_threads_lock.acquire()
+            for cs in validator_threads.keys():
+                dt_now = datetime.now()
+                dt_start =  validator_threads[cs]['start']
+                dt_access =  validator_threads[cs]['access']
+                runtime_str = str( (dt_now - dt_start).total_seconds() )
+                errors_str = str( validator_threads[cs]['errors'] )
+                count_str = str( validator_threads[cs]['count'] )
+                dt_start_str = dt_start.strftime("%Y-%m-%d %H:%M:%S")
+                dt_access_str = dt_access.strftime("%Y-%m-%d %H:%M:%S")
+                mnt_str = ( "[LOG] cache server: " + cs +
+                            ", started: " + dt_start_str +
+                            ", last access: " + dt_access_str +
+                            ", runtime: " + runtime_str +
+                            ", counter: " + count_str +
+                            ", errors: " + errors_str
+                            )
+                print mnt_str
+        except Exception, e:
+            print "Error during maintenance! Failed with %s" % e.message
+        finally:
+            validator_threads_lock.release()
+        sleep(maintenance_timeout)
 
 """
 client_thread
+
+    - handels incoming client connections and queries
+    - starts validation_thread if necessary
 """
 def client_thread(conn):
     data = conn.recv(1024)
@@ -94,34 +113,40 @@ def client_thread(conn):
             conn.close()
             return
         # Start a thread for the current cache server if necessary
-        lock.acquire()
+        validator_threads_lock.acquire()
         try:
             global validator_threads
-            global validator_thread_queues
-            global validator_thread_timeouts
-            if cache_server not in validator_thread_queues:
-                print "Create ValidatorThread (%s)" % cache_server
+            if cache_server not in validator_threads:
+                validator_threads[cache_server] = dict()
                 new_queue = Queue.Queue()
-                validator_thread_queues[cache_server] = new_queue
-                validator_threads[cache_server] = start_new_thread(validator_thread, (validator_thread_queues[cache_server],cache_server))
-                validator_thread_timeouts[cache_server] = datetime.now()
-                #validator_threads[cache_server] = ValidatorThread(new_queue, cache_server)
-                #validator_threads[cache_server].start()
+                validator_threads[cache_server]['queue'] = new_queue
+                validator_threads[cache_server]['thread'] = \
+                    start_new_thread(validator_thread,
+                                     (validator_threads[cache_server]['queue'],
+                                      cache_server))
+                validator_threads[cache_server]['start'] = datetime.now()
+                validator_threads[cache_server]['access'] = datetime.now()
+                validator_threads[cache_server]['errors'] = 0
+                validator_threads[cache_server]['count'] = 1
             else:
-                validator_thread_timeouts[cache_server] = datetime.now()
+                validator_threads[cache_server]['access'] = datetime.now()
+                tmp = validator_threads[cache_server]['count']
+                validator_threads[cache_server]['count'] = tmp+1
         finally:
-            lock.release()
-        validator_thread_queues[cache_server].put(query)
+            validator_threads_lock.release()
+        validator_threads[cache_server]['queue'].put(query)
 
 """
 validator_thread
+
+    - handels cache server connections and queries by clients
 """
 def validator_thread(queue, cache_server):
     cache_host = cache_server.split(":")[0]
     cache_port = cache_server.split(":")[1]
     cache_cmd = [validator_path, cache_host, cache_port]
     validator_process = Popen(cache_cmd, stdin=PIPE, stdout=PIPE)
-    print "Started validator thread (%s)" % cache_server
+    print "START validator thread (%s)" % cache_server
     while True:
         validation_entry = queue.get(True)
         conn    = validation_entry['conn']
@@ -130,17 +155,10 @@ def validator_thread(queue, cache_server):
         asn     = validation_entry["asn"]
         bgp_entry_str = str(network) + " " + str(masklen) + " " + str(asn)
         validator_process.stdin.write(bgp_entry_str + '\n')
-        while True:
-            validation_result = validator_process.stdout.readline().strip()
-            validity_nr =  get_validity_nr(validation_result)
-            if validity_nr == -102:
-                continue
-            elif (validity_nr == -103) or (validity_nr == -101):
-                print(cache_server + " -> " + get_validation_message(validity_nr))
-            else:
-                print(cache_server + " -> " + network + "/" + masklen +
-                        "(AS" + asn + ") -> " + str(validity_nr))
-                break
+        validation_result = validator_process.stdout.readline().strip()
+        validity_nr =  get_validity_nr(validation_result)
+        print(cache_server + " -> " + network + "/" + masklen +
+                "(AS" + asn + ") -> " + str(validity_nr))
 
         resp = dict()
         resp['cache_server'] = cache_server
@@ -153,8 +171,12 @@ def validator_thread(queue, cache_server):
             conn.close()
         except:
             print "Error sending validation response!"
-        else:
-            print "Send validation response and closed client connection."
+        if (validity_nr < -100):
+            validator_threads_lock.acquire()
+            global validator_threads
+            tmp = validator_threads[cache_server]['errors']
+            validator_threads[cache_server]['errors'] = tmp+1
+            validator_threads_lock.release()
 
 try:
     main()

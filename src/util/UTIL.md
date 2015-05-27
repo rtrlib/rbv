@@ -15,6 +15,9 @@ Compile RTRlib using cmake out-of-source build
     $ mkdir release ; cd release
     $ cmake -DCMAKE_BUILD_TYPE=release ../
 
+Note: CMAKE_BUILD_TYPE **must** be set to *release*, otherwise `cli-validator`
+prints debug messages to `STDOUT` interfering with the bgp-validator daemon.
+
 If any error is raised, please consult readme or build instructions of RTRlib.
 
 Copy cli-validator binary to RBV

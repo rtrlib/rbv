@@ -12,10 +12,11 @@ $ cd <path/to/RBV>/src
 $ pip install -r requirements.txt
 ```
 external tools:
+ - URL of a working RPKI cache server
  - cli-validator from [rtrlib]
 
-Build `cli-validator` as described in [src/util/UTIL.md](src/util/UTIL.md) and copy its
-compiled binary into `<path/to/RBV>/src/util`.
+Build `cli-validator` as described in [src/util/UTIL.md](src/util/UTIL.md) and
+copy its compiled binary into `<path/to/RBV>/src/util`.
 
 ## deployment and configuration
 
@@ -37,9 +38,9 @@ server or with apache integration - some configuration steps are required.
 ## stand-alone server
 
 You can run RBV as a stand-alone server using python only, without a big-iron
-such as apache. RBV uses the integrated webserver of the[flask] microframework.
-For testing just type `python rbv.py` and the server starts on `localhost` with
-port 5000.
+such as apache. RBV uses the integrated webserver of the [flask] microframework.
+For testing just type `python rbv.py` and the server starts on *localhost* with
+port *5000*. Point your browser to http://localhost:5000.
 
 If you want public access modify `www_validator_server` entry in
 [src/settings.py](src/settings.py). To allow access from any interface, set
