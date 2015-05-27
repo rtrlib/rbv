@@ -1,3 +1,22 @@
+from __future__ import print_function
+import settings
+import sys
+
+def print_log(*objs):
+    if settings.logging or settings.verbose:
+        print("[LOGS] .", *objs, file=sys.stdout)
+
+def print_info(*objs):
+    if settings.verbose:
+        print("[INFO] ..", *objs, file=sys.stdout)
+
+def print_warn(*objs):
+    if settings.warning or settings.verbose:
+        print("[WARN] ", *objs, file=sys.stderr)
+
+def print_error(*objs):
+    print("[ERROR] ", *objs, file=sys.stderr)
+
 """
 get_validity_nr
 
@@ -29,7 +48,7 @@ def get_validity_nr(validation_result_string):
     try:
         validity_nr = int(validity_str)
     except ValueError:
-        print "Validity string is not an integer: " + validity_str
+        print_error("Validity string is not an integer: " + validity_str)
         validity_nr = -102
     return validity_nr
 

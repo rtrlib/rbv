@@ -1,15 +1,5 @@
-"""
-This online_validator is part of the RPKI Validator extensions. It is responsible
-for determining the validity of the combination of a prefix and ASN. It was built for
-serving the requests from the extensions, but it can be used independently of them as well,
-for example for offering a web service for RPKI validation.
-
-The online_validator is meant to be used as a daemon. Once started, it is waiting for data
-by checking the database for new entries. When a new entry is found, it is validated and
-the validation result is written back to the database. This can be then sent back to the
-extension.
-
-"""
+from util import *
+from settings import bgp_validator_server, maintenance_timeout, validator_path
 
 import json
 import Queue
@@ -23,37 +13,35 @@ from threading import Lock
 from thread import start_new_thread
 from time import sleep
 
-from settings import validator_path,bgp_validator_server, maintenance_timeout
-from util import get_validity_nr, cache_server_valid
-
-thread_timeout = 300
 validator_threads_lock = Lock()
 validator_threads = {}
 
 """
-main
+validator_main
 """
-def main():
+def validator_main():
+    print_log("CALL main")
     rbv_host = bgp_validator_server['host']
     rbv_port = int(bgp_validator_server['port'])
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print "Socket created"
+    print_info("Socket created")
     #Bind socket to local host and port
     try:
         s.bind((rbv_host, rbv_port))
     except socket.error as msg:
-        print "Bind failed. Error Code : " + str(msg[0]) + " Message " + msg[1]
+        print_error("Bind failed. Error Code : " + str(msg[0]) +
+                    " Message " + msg[1])
         sys.exit()
-    print "Socket bind complete"
+    print_info("Socket bind complete")
     #Start listening on socket
     s.listen(10)
-    print "Socket now listening"
+    print_info("Socket now listening")
     start_new_thread(maintenance_thread, ())
     while True:
         #wait to accept a connection - blocking call
         conn, addr = s.accept()
-        print "Connected with " + addr[0] + ":" + str(addr[1])
+        print_info("Connected with " + addr[0] + ":" + str(addr[1]))
         start_new_thread(client_thread, (conn,))
 
     s.close()
@@ -64,7 +52,7 @@ maintenance_thread
     - periodically checks all running validation threads
 """
 def maintenance_thread():
-    print "START maintenance_thread"
+    print_log("CALL maintenance_thread")
     while True:
         try:
             validator_threads_lock.acquire()
@@ -72,21 +60,21 @@ def maintenance_thread():
                 dt_now = datetime.now()
                 dt_start =  validator_threads[cs]['start']
                 dt_access =  validator_threads[cs]['access']
-                runtime_str = str( (dt_now - dt_start).total_seconds() )
+                runtime_str = str( int((dt_now - dt_start).total_seconds()) )
                 errors_str = str( len(validator_threads[cs]['errors']) )
                 count_str = str( validator_threads[cs]['count'] )
                 dt_start_str = dt_start.strftime("%Y-%m-%d %H:%M:%S")
                 dt_access_str = dt_access.strftime("%Y-%m-%d %H:%M:%S")
-                mnt_str = ( "[THREAD LOG] " + cs +
+                mnt_str = ( "thread: " + cs +
                             ", started: " + dt_start_str +
                             ", last access: " + dt_access_str +
-                            ", runtime: " + runtime_str +
+                            ", runtime: " + runtime_str + "s" +
                             ", counter: " + count_str +
                             ", errors: " + errors_str
                             )
-                print mnt_str
+                print_log(mnt_str)
         except Exception, e:
-            print "Error during maintenance! Failed with %s" % e.message
+            print_error("Error during maintenance! Failed with %s" % e.message)
         finally:
             validator_threads_lock.release()
         sleep(maintenance_timeout)
@@ -98,18 +86,19 @@ client_thread
     - starts validation_thread if necessary
 """
 def client_thread(conn):
+    print_log("CALL client_thread")
     data = conn.recv(1024)
     try:
         query = json.loads(data)
     except ValueError:
-        print "Error decoding query into JSON!"
+        print_error("Error decoding query into JSON!")
         conn.sendall("Invalid query data, must be JSON!\n")
         conn.close()
     else:
         query['conn'] = conn
         cache_server = query['cache_server']
         if not cache_server_valid(cache_server):
-            print "Invalid cache server (%s)!" % cache_server
+            print_error("Invalid cache server (%s)!" % cache_server)
             conn.close()
             return
         # Start a thread for the current cache server if necessary
@@ -146,7 +135,7 @@ def validator_thread(queue, cache_server):
     cache_port = cache_server.split(":")[1]
     cache_cmd = [validator_path, cache_host, cache_port]
     validator_process = Popen(cache_cmd, stdin=PIPE, stdout=PIPE)
-    print "START validator thread (%s)" % cache_server
+    print_log("CALL validator thread (%s)" % cache_server)
     while True:
         validation_entry = queue.get(True)
         conn    = validation_entry['conn']
@@ -157,8 +146,8 @@ def validator_thread(queue, cache_server):
         validator_process.stdin.write(bgp_entry_str + '\n')
         validation_result = validator_process.stdout.readline().strip()
         validity_nr =  get_validity_nr(validation_result)
-        print(cache_server + " -> " + network + "/" + masklen +
-                "(AS" + asn + ") -> " + str(validity_nr))
+        print_info(cache_server + " -> " + network + "/" + masklen +
+                    "(AS" + asn + ") -> " + str(validity_nr))
 
         resp = dict()
         resp['cache_server'] = cache_server
@@ -169,20 +158,22 @@ def validator_thread(queue, cache_server):
         try:
             conn.sendall(json.dumps(resp)+'\n')
             conn.close()
-        except:
-            print "Error sending validation response!"
-        if (validity_nr < -100):
+        except Exception, e:
+            print_error("Error sending validation response, failed with: %s" %
+                        e.message)
+        if (validity_nr <= -100):
             validator_threads_lock.acquire()
             global validator_threads
             validator_threads[cache_server]['errors'].append(validity_nr)
             validator_threads_lock.release()
 
-try:
-    main()
-except KeyboardInterrupt:
-    print("Shutdown requested by the user. Exiting...")
-except Exception:
-    print traceback.format_exc()
-    print("An error occurred. Exiting...")
-finally:
-    sys.exit()
+if __name__ == "__main__":
+    try:
+        validator_main()
+    except KeyboardInterrupt:
+        print_error("Shutdown requested by the user. Exiting...")
+    except Exception:
+        print_error(traceback.format_exc())
+        print_error("An error occurred. Exiting...")
+    finally:
+        sys.exit()

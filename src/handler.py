@@ -1,10 +1,11 @@
+from util import *
+from settings import *
+
 import json
 import socket
 import sys
 from subprocess import PIPE, Popen
-
-from settings import validator_path,bgp_validator_server,default_cache_server
-from util import get_validity_nr, get_validation_message
+from werkzeug.useragents import UserAgent
 
 """
 validate_v11
@@ -25,60 +26,66 @@ def validate_v11(request):
     network = str(prefix_array[0]).strip()
     masklen = str(prefix_array[1]).strip()
     asn = str(request.form['asn']).strip()
-
     remote_addr = "0.0.0.0"
     if request.headers.getlist("X-Forwarded-For"):
         remote_addr = request.headers.getlist("X-Forwarded-For")[0]
     else:
         remote_addr = request.remote_addr
-    print "Remote IP: " + remote_addr
-    #if request.user_agent:
-    #    user_agent = request.user_agent
-    #    print "User agent: " + user_agent
-    #user_agent = request.headers.get('user_agent')
-    #user_agent = request.user_agent
-    #print "User agent: " + user_agent
+    ua_str = str(request.user_agent)
+    ua = UserAgent(ua_str)
+    platform = ua.platform
+    browser = ua.browser
+    print_info( "Client IP: " + remote_addr +
+                ", OS: " + platform +
+                ", browser: " + browser)
 
     rbv_host = bgp_validator_server['host']
     rbv_port = int(bgp_validator_server['port'])
-    validity_nr = "-1"
+    validity_nr = "-127"
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print "Socket created"
+    print_info("Socket created")
     #Bind socket to local host and port
     try:
         s.connect((rbv_host, rbv_port))
     except socket.error as msg:
-        print "Bind failed. Error Code : " + str(msg[0]) + " Message " + msg[1]
+        print_error("Bind failed. Error Code : " + str(msg[0]) +
+                    " Message " + msg[1])
         s.close()
         return "Error connecting to bgp validator!"
-    print "Socket bind complete"
+    print_info("Socket bind complete")
 
     query = dict()
-    #if user_agent:
-    #    query['user_agent'] = user_agent
-    #if client_ip:
-    query['remote_addr'] = str(remote_addr)
     query['cache_server'] = cache_server
     query['network'] = network
     query['masklen'] = masklen
     query['asn'] = asn
-    print "query JSON: " + json.dumps(query)
+    print_info("query JSON: " + json.dumps(query))
     try:
         s.sendall(json.dumps(query))
         data = s.recv(1024)
     except Exception, e:
-        print "Error sending query."
+        print_error("Error sending query, failed with: %s" % e.message)
     else:
         try:
             resp = json.loads(data)
         except:
-            print "Error decoding JSON!"
+            print_error("Error decoding JSON!")
         else:
             if 'validity' in resp:
                 validity_nr = resp['validity']
     finally:
         s.close()
+    if validation_log['enabled']:
+        try:
+            with open(validation_log['file'], "ab") as f:
+                ventry = ';'.join([remote_addr,platform,browser,
+                                cache_server,network,masklen,asn,
+                                str(validity_nr)])
+                f.write(ventry+'\n')
+        except Exception, e:
+            print_error("Error writing validation log, failed with: %s" %
+                        e.message)
     return json.dumps({"code":validity_nr,
                        "message":get_validation_message(validity_nr)})
 
