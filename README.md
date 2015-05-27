@@ -73,7 +73,7 @@ simple.
 First, install apache and mod_wsgi, and follow the deployment and configuration
 steps, as described above.
 Second, modify *rbv_base_path* in [src/settings.py](src/settings.py) matching
-the `src` directory of RBV clone.
+the `src` directory of RBV repository clone.
 Third, modify [etc/rbv_wsgi.conf](etc/rbv_wsgi.conf) according to your server
 environment.
 The *user* in the `rbv_wsgi.conf` must also have read-write access to the RBV
@@ -81,6 +81,7 @@ path and its subdirectories - **do not** use *root* here, but any other
 non-priveledge user (even your own account) is fine.
 Copy `rbv_wsgi.conf` to `/etc/apache2/sites-available` and create a sym-link in
 `sites-enabled`.
+Restart the apache webserver or service.
 
 **Note1:** apache v2.2 and v2.4 use different access rules, see comments in file
 `rbv_wsgi.conf`.
@@ -91,6 +92,8 @@ steps might be necessary.
 ## RPKI browser plugin
 
 [Firefox-Addon][firefox]
+
+[Chrome-Extension][chrome]
 
 ## references
 
