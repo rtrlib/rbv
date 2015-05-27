@@ -26,6 +26,7 @@ def validate_v11(request):
     network = str(prefix_array[0]).strip()
     masklen = str(prefix_array[1]).strip()
     asn = str(request.form['asn']).strip()
+    url = request.url
     remote_addr = "0.0.0.0"
     if request.headers.getlist("X-Forwarded-For"):
         remote_addr = request.headers.getlist("X-Forwarded-For")[0]
@@ -79,9 +80,8 @@ def validate_v11(request):
     if validation_log['enabled']:
         try:
             with open(validation_log['file'], "ab") as f:
-                ventry = ';'.join([remote_addr,platform,browser,
-                                cache_server,network,masklen,asn,
-                                str(validity_nr)])
+                ventry = ';'.join([remote_addr,platform,browser,url,
+                                   cache_server,prefix,asn,str(validity_nr)])
                 f.write(ventry+'\n')
         except Exception, e:
             print_error("Error writing validation log, failed with: %s" %

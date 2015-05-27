@@ -13,4 +13,6 @@ thread_errors = 42
 logging = True
 verbose = True
 warning = True
+# log validation request/queries, file format:
+#   ClientIP;ClientOS;ClientBrowser;RequestURL;CacheServer;Prefix;ASN;Validity
 validation_log = {"enabled":True, "file":"validation.log"}
