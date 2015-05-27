@@ -24,7 +24,7 @@ from thread import start_new_thread
 from time import sleep
 
 from settings import validator_path,bgp_validator_server, maintenance_timeout
-from util import get_validity_nr, get_validation_message, cache_server_valid
+from util import get_validity_nr, cache_server_valid
 
 thread_timeout = 300
 validator_threads_lock = Lock()
@@ -73,11 +73,11 @@ def maintenance_thread():
                 dt_start =  validator_threads[cs]['start']
                 dt_access =  validator_threads[cs]['access']
                 runtime_str = str( (dt_now - dt_start).total_seconds() )
-                errors_str = str( validator_threads[cs]['errors'] )
+                errors_str = str( len(validator_threads[cs]['errors']) )
                 count_str = str( validator_threads[cs]['count'] )
                 dt_start_str = dt_start.strftime("%Y-%m-%d %H:%M:%S")
                 dt_access_str = dt_access.strftime("%Y-%m-%d %H:%M:%S")
-                mnt_str = ( "[LOG] cache server: " + cs +
+                mnt_str = ( "[THREAD LOG] " + cs +
                             ", started: " + dt_start_str +
                             ", last access: " + dt_access_str +
                             ", runtime: " + runtime_str +
@@ -126,7 +126,7 @@ def client_thread(conn):
                                       cache_server))
                 validator_threads[cache_server]['start'] = datetime.now()
                 validator_threads[cache_server]['access'] = datetime.now()
-                validator_threads[cache_server]['errors'] = 0
+                validator_threads[cache_server]['errors'] = list()
                 validator_threads[cache_server]['count'] = 1
             else:
                 validator_threads[cache_server]['access'] = datetime.now()
@@ -174,8 +174,7 @@ def validator_thread(queue, cache_server):
         if (validity_nr < -100):
             validator_threads_lock.acquire()
             global validator_threads
-            tmp = validator_threads[cache_server]['errors']
-            validator_threads[cache_server]['errors'] = tmp+1
+            validator_threads[cache_server]['errors'].append(validity_nr)
             validator_threads_lock.release()
 
 try:

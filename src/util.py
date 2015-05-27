@@ -10,7 +10,6 @@ and return the validation number, which is:
 See get_validation_message(..) for details.
 """
 def get_validity_nr(validation_result_string):
-    # To Do: logging in case of errors!!!
     if validation_result_string == "timeout":
         return -101
 
@@ -30,8 +29,8 @@ def get_validity_nr(validation_result_string):
     try:
         validity_nr = int(validity_str)
     except ValueError:
-        # To Do: logging!!!
-        raise Exception("Validity string is not an integer: " + validity_str)
+        print "Validity string is not an integer: " + validity_str
+        validity_nr = -102
     return validity_nr
 
 """
@@ -40,26 +39,30 @@ get_validation_message
 Return a validation message based on the validation number.
 """
 def get_validation_message(validity_nr):
-    validity_nr = str(validity_nr)
-    # Return validation result
-    if validity_nr == "-1":
-        validity = "Not found"
-    elif validity_nr == "0":
-        validity = "Invalid"
-    elif validity_nr == "1":
-        validity = "Valid"
-    elif validity_nr == "-100":
-        validity = "Invalid Cache Server"
-    elif validity_nr == "-101":
-        validity = "Cache Server Timeout"
-    elif validity_nr == "-102":
-        validity = "Invalid Validation Result"
-    elif validity_nr == "-103":
-        validity = "Cache Server Error"
-    elif validity_nr == "-104":
-        validity = "Cache Server Input Error"
-    else:
+    try:
+        validity_nr = int(validity_nr)
+    except:
         validity = "Unknown Error"
+    else:
+        # Return validation result
+        if validity_nr == 1:
+            validity = "Valid"
+        elif validity_nr == 0:
+            validity = "Invalid"
+        elif validity_nr == -1:
+            validity = "Not Found"
+        elif validity_nr == -100:
+            validity = "Cache Server Invalid"
+        elif validity_nr == -101:
+            validity = "Cache Server Timeout"
+        elif validity_nr == -102:
+            validity = "Invalid Validation Result"
+        elif validity_nr == -103:
+            validity = "Cache Server Error"
+        elif validity_nr == -104:
+            validity = "Cache Server Input Error"
+        else:
+            validity = "Unknown Error"
     return validity
 
 """

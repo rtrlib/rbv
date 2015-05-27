@@ -32,7 +32,7 @@ server or with apache integration - some configuration steps are required.
    server.
 6. review [src/settings.py](src/settings.py) and modify entries accordingly
 7. install python requirements using pip, see above
-8. start the bgp-validator daemon,
+8. start the bgp-validator daemon: `python validator.py`
 9. that's it, now proceed with stand-alone server or apache integration
 
 ## stand-alone server
