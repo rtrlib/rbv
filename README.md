@@ -1,5 +1,15 @@
 # REST BGP Validator (RBV)
 
+The REST BGP Validator (RBV) allows to validate the origin AS (*autonomous
+system*) of an IP prefix announced by the BGP (*Border Gateway Protocol*)
+control plane of the Internet. For the validation process RBV uses the
+[RTRlib][rtrlib] to access and query RPKI cache servers.
+
+It offers a RESTful interface to web-applications for validation queries, and
+simple website offering the same service in a user-friendly manner. Further, it
+is the backend for the RPKI browser plugin available for [Firefox][firefox]
+and [Chrome][chrome].
+
 ## requirements
 
 Python modules:
@@ -17,6 +27,13 @@ external tools:
 
 Build `cli-validator` as described in [src/util/UTIL.md](src/util/UTIL.md) and
 copy its compiled binary into `<path/to/RBV>/src/util`.
+
+Optional packages, for apache integration:
+ - Apache webserver
+ - mod_wsgi for apache
+
+These packages are available for all major OS releases and platforms, or
+compile and install from source.
 
 ## deployment and configuration
 
@@ -44,7 +61,7 @@ port *5000*. Point your browser to http://localhost:5000.
 
 If you want public access modify `www_validator_server` entry in
 [src/settings.py](src/settings.py). To allow access from any interface, set
-host = `0.0.0.0` or specify a distinct interace IP address. You may also modify
+host = `0.0.0.0` or specify a distinct interface IP address. You may also modify
 the port, however ports below 1024 need system/root rights!
 
 Note: for stand-alone server you can also use [python-virtualenv][virtualenv].
@@ -55,7 +72,7 @@ Note: for stand-alone server you can also use [python-virtualenv][virtualenv].
 
 ## RPKI browser plugin
 
-Firefox [addon]
+[Firefox-Addon][firefox]
 
 ## references
 
@@ -65,4 +82,5 @@ Firefox [addon]
 
 [rbv]: https://github.com/rtrlib/REST.git
 [rtrlib]: https://github.com/rtrlib/rtrlib.git
-[addon]: https://github.com/rtrlib/firefox-addon.git
+[firefox]: https://github.com/rtrlib/firefox-addon.git
+[chrome]: https://github.com/rtrlib/chrome-extension.git
