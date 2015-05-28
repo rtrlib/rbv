@@ -74,7 +74,9 @@ First, install apache and mod_wsgi, and follow the deployment and configuration
 steps, as described above.
 Second, modify *rbv_base_path* in [src/settings.py](src/settings.py) matching
 the `src` directory of RBV repository clone.
-Third, modify [etc/rbv_wsgi.conf](etc/rbv_wsgi.conf) according to your server
+Third, edit [src/rbv.wsgi](src/rbv.wsgi) and replace `</path/to/RBV>/src' as in
+`settings.py`.
+Forth, modify [etc/rbv_wsgi.conf](etc/rbv_wsgi.conf) according to your server
 environment.
 The *user* in the `rbv_wsgi.conf` must also have read-write access to the RBV
 path and its subdirectories - **do not** use *root* here, but any other

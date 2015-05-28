@@ -148,8 +148,20 @@ def validator_thread(queue, cache_server):
         masklen = validation_entry["masklen"]
         asn     = validation_entry["asn"]
         bgp_entry_str = str(network) + " " + str(masklen) + " " + str(asn)
-        validator_process.stdin.write(bgp_entry_str + '\n')
-        validation_result = validator_process.stdout.readline().strip()
+        try:
+            validator_process.stdin.write(bgp_entry_str + '\n')
+        except Exception, e:
+            print_error("Error writing to validator process, failed with %s!" %
+                        e.message)
+            stop_validator_thread(cache_server)
+            return
+        try:
+            validation_result = validator_process.stdout.readline().strip()
+        except Exception, e:
+            print_error("Error reading from validator process, failed with %s!" %
+                        e.message)
+            stop_validator_thread(cache_server)
+            return
         validity_nr =  get_validity_nr(validation_result)
         print_info(cache_server + " -> " + network + "/" + masklen +
                     "(AS" + asn + ") -> " + str(validity_nr))
@@ -171,6 +183,43 @@ def validator_thread(queue, cache_server):
             global validator_threads
             validator_threads[cache_server]['errors'].append(validity_nr)
             validator_threads_lock.release()
+
+"""
+restart_validator_thread
+
+    - helper function to restart a validator thread after an error
+"""
+def restart_validator_thread(cache_server):
+    validator_threads_lock.acquire()
+    try:
+        global validator_threads
+        validator_threads[cache_server]['thread'].exit()
+        validator_threads[cache_server]['thread'] = \
+            start_new_thread(validator_thread,
+                             (validator_threads[cache_server]['queue'],
+                              cache_server))
+    except Exception, e:
+        print_error("Error restarting validator thread (%s), failed with %s" %
+                    (cache_server,e.message))
+    finally:
+        validator_threads_lock.release()
+
+"""
+stop_validator_thread
+
+    - helper function to stop a validator thread after an error
+"""
+def stop_validator_thread(cache_server):
+    validator_threads_lock.acquire()
+    try:
+        global validator_threads
+        validator_threads[cache_server]['thread'].exit()
+        del validator_threads[cache_server]
+    except Exception, e:
+        print_error("Error stopping validator thread (%s), failed with %s" %
+                    (cache_server,e.message))
+    finally:
+        validator_threads_lock.release()
 
 if __name__ == "__main__":
     try:

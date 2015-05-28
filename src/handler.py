@@ -11,6 +11,17 @@ from werkzeug.useragents import UserAgent
 file_lock = Lock()
 
 """
+validate_v20
+"""
+def validate_v20(request):
+    if request.method == 'POST':
+        pass
+    elif request.method == 'GET':
+        pass
+    else:
+        return "Invalid request"
+
+"""
 validate_v11
 """
 def validate_v11(request):
