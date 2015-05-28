@@ -4,8 +4,11 @@ from settings import *
 import json
 import socket
 import sys
+from threading import Lock
 from subprocess import PIPE, Popen
 from werkzeug.useragents import UserAgent
+
+file_lock = Lock()
 
 """
 validate_v11
@@ -79,6 +82,7 @@ def validate_v11(request):
         s.close()
     if validation_log['enabled']:
         try:
+            file_lock.acquire()
             with open(validation_log['file'], "ab") as f:
                 ventry = ';'.join([remote_addr,platform,browser,url,
                                    cache_server,prefix,asn,str(validity_nr)])
@@ -86,6 +90,8 @@ def validate_v11(request):
         except Exception, e:
             print_error("Error writing validation log, failed with: %s" %
                         e.message)
+        finally:
+            file_lock.release()
     return json.dumps({"code":validity_nr,
                        "message":get_validation_message(validity_nr)})
 
