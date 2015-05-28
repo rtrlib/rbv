@@ -1,30 +1,49 @@
 <html>
   <head><title>REST BGP Validator</title></head>
+  <link rel="stylesheet" href="rbv.css" type="text/css">
   <body>
   <div id="div_main" style="width:100%">
     <div id="header" style="width:100%">
       <h1>REST BGP Validator</h1>
     </div>
-    <div id="input1" style="width:100%">
+    <div id="input1" style="width:100%" class="input">
     <fieldset>
       <legend>Validate IP prefix : Origin AS</legend>
       <form method="post" action="http://localhost:5000/validator/v1.1">
         <label for="prefix">IP prefix</label>
-        <input type="text" id="prefix" name="prefix" maxlength="18">
+        <input type="text" id="prefix" name="prefix" maxlength="18" size="30"/>
+        <br/>
         <label for="asn">Origin AS</label>
-        <input type="text" id="asn" name="asn" maxlength="10">
+        <input type="text" id="asn" name="asn" maxlength="10" size="30"/>
+        <br/>
         <label for="cache_server">Cache Server</label>
-        <select name="cache_server">
-          <option value="rpki-validator.realmv6.org:8282">rpki-validator.realmv6.org</option>
-        </select>
+        <input  type="text" id="cache_server" name="cache_server"
+                value="rpki-validator.realmv6.org:8282" size="30"/>
+        <br/>
         <button type="reset">Reset</button>
         <button type="submit">Submit</button>
       </form>
     </fieldset>
     </div>
-    <div id="input2" style="width:100%">
+    <div id="input2" style="width:100%" class="input">
     <fieldset>
       <legend class="fs_legend">Map and validate IP address</legend>
+      <form method="post" action="http://localhost:5000/validator/v2.0">
+        <label for="host">Host IP|URL</label>
+        <input type="text" id="prefix" name="host" maxlength="18" size="30"/>
+        <br/>
+        <label for="cache_server">Cache Server</label>
+        <input  type="text" id="cache_server" name="cache_server"
+                value="rpki-validator.realmv6.org:8282" size="30"/>
+        <br/>
+        <label for="ip2as">IP2AS mapping</label>
+        <select name="ip2as" id="ip2as">
+          <option value="cymru">Team Cymru</option>
+        </select>
+        <br/>
+        <button type="reset">Reset</button>
+        <button type="submit">Submit</button>
+      </form>
     </fieldset>
     </div>
   </div>

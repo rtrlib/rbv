@@ -20,6 +20,7 @@ def validate_v20(request):
         pass
     else:
         return "Invalid request"
+    return "NOT IMPLEMENTED YET"
 
 """
 validate_v11

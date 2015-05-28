@@ -13,6 +13,12 @@ def html():
     return redirect("/html/validate.html")
 
 # Validation Service
+@app.route('/validator/v2.0', methods=['GET', 'POST'])
+def online_validator_v20():
+    result_string = handler.validate_v20(request)
+    return Response(result_string)
+
+# Validation Service
 @app.route('/validator/v1.1', methods=['GET', 'POST'])
 def online_validator_v11():
     result_string = handler.validate_v11(request)
