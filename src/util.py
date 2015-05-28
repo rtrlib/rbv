@@ -65,11 +65,11 @@ def get_validation_message(validity_nr):
     else:
         # Return validation result
         if validity_nr == 1:
-            validity = "Valid"
+            validity = "VALID"
         elif validity_nr == 0:
-            validity = "Invalid"
+            validity = "INVALID"
         elif validity_nr == -1:
-            validity = "Not Found"
+            validity = "UNKNOWN"
         elif validity_nr == -100:
             validity = "Cache Server Invalid"
         elif validity_nr == -101:
