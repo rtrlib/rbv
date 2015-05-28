@@ -8,14 +8,16 @@ import socket
 import sys
 import traceback
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from subprocess import PIPE, Popen
 from threading import Lock, Thread
-from thread import start_new_thread
+#from thread import start_new_thread
 from time import sleep
 
 validator_threads_lock = Lock()
-validator_threads = {}
+validator_threads = dict()
+maintenance_thread = None
+maintenance_thread_queue = Queue.Queue()
 
 """
 validator_main
@@ -38,12 +40,19 @@ def validator_main():
     #Start listening on socket
     s.listen(10)
     print_info("Socket now listening")
-    start_new_thread(maintenance_thread,())
+    #start_new_thread(maintenance_thread,())
+    global maintenance_thread
+    maintenance_thread = Thread(target=maintenance_thread,
+                                args=(maintenance_thread_queue,))
+    maintenance_thread.start()
+
     while True:
         #wait to accept a connection - blocking call
         conn, addr = s.accept()
         print_info("Connected with " + addr[0] + ":" + str(addr[1]))
-        start_new_thread(client_thread, (conn,))
+        ct = Thread(target=client_thread, args=(conn,))
+        ct.start()
+        #start_new_thread(client_thread, (conn,))
 
     s.close()
 
@@ -52,9 +61,16 @@ maintenance_thread
 
     - periodically checks all running validation threads
 """
-def maintenance_thread():
+def maintenance_thread(mtq):
     print_log("CALL maintenance_thread")
+    timeout = datetime.now() + timedelta(0,maintenance_timeout)
     while True:
+        now = datetime.now()
+        if not mtq.empty():
+            break
+        if now < timeout:
+            sleep(1)
+            continue
         try:
             validator_threads_lock.acquire()
             for cs in validator_threads.keys():
@@ -82,7 +98,8 @@ def maintenance_thread():
             print_error("Error during maintenance! Failed with %s" % e.message)
         finally:
             validator_threads_lock.release()
-        sleep(maintenance_timeout)
+        timeout = datetime.now() + timedelta(0,maintenance_timeout)
+        print_info("maintenance_thread sleeps until: " + timeout.strftime("%Y-%m-%d %H:%M:%S") )
 
 """
 client_thread
@@ -114,10 +131,15 @@ def client_thread(conn):
                 validator_threads[cache_server] = dict()
                 new_queue = Queue.Queue()
                 validator_threads[cache_server]['queue'] = new_queue
-                validator_threads[cache_server]['thread'] = \
-                    start_new_thread(validator_thread,
-                                     (validator_threads[cache_server]['queue'],
-                                      cache_server))
+                vt = Thread(target=validator_thread,
+                            args=(validator_threads[cache_server]['queue'],
+                                  cache_server))
+                vt.start()
+                #validator_threads[cache_server]['thread'] = \
+                #    start_new_thread(validator_thread,
+                #                     (validator_threads[cache_server]['queue'],
+                #                      cache_server))
+                validator_threads[cache_server]['thread'] = vt
                 validator_threads[cache_server]['start'] = datetime.now()
                 validator_threads[cache_server]['access'] = datetime.now()
                 validator_threads[cache_server]['errors'] = list()
@@ -142,21 +164,26 @@ def validator_thread(queue, cache_server):
     cache_cmd = [validator_path, cache_host, cache_port]
     validator_process = Popen(cache_cmd, stdin=PIPE, stdout=PIPE)
     print_log("CALL validator thread (%s)" % cache_server)
-    while True:
-        do_break=False
+    run = True
+    while run:
         validation_entry = queue.get(True)
+        if validation_entry == "STOP":
+            run = False
+            break
         conn    = validation_entry['conn']
         network = validation_entry["network"]
         masklen = validation_entry["masklen"]
         asn     = validation_entry["asn"]
         bgp_entry_str = str(network) + " " + str(masklen) + " " + str(asn)
+
         try:
             validator_process.stdin.write(bgp_entry_str + '\n')
         except Exception, e:
             print_error("Error writing to validator process, failed with %s!" %
                         e.message)
             restart_validator_thread(cache_server)
-            do_break = True
+            run = False
+
         try:
             validation_result = validator_process.stdout.readline().strip()
         except Exception, e:
@@ -164,7 +191,7 @@ def validator_thread(queue, cache_server):
                         e.message)
             restart_validator_thread(cache_server)
             validation_result = ""
-            do_break = True
+            run = False
 
         validity_nr =  get_validity_nr(validation_result)
         print_info(cache_server + " -> " + network + "/" + masklen +
@@ -187,8 +214,8 @@ def validator_thread(queue, cache_server):
             global validator_threads
             validator_threads[cache_server]['errors'].append(validity_nr)
             validator_threads_lock.release()
-        if do_break:
-            break
+        # end while
+    validator_process.kill()
     return True
 
 """
@@ -197,13 +224,23 @@ restart_validator_thread
     - helper function to restart a validator thread after an error
 """
 def restart_validator_thread(cache_server):
+    print_log("restarting validator thread (%s)" % cache_server)
     validator_threads_lock.acquire()
     try:
         global validator_threads
-        validator_threads[cache_server]['thread'] = \
-                    start_new_thread(validator_thread,
-                                     (validator_threads[cache_server]['queue'],
-                                      cache_server))
+        #validator_threads[cache_server]['thread'] = \
+        #            start_new_thread(validator_thread,
+        #                             (validator_threads[cache_server]['queue'],
+        #                              cache_server))
+        validator_threads[cache_server]['queue'].put("STOP")
+        new_queue = Queue.Queue()
+        validator_threads[cache_server]['queue'] = new_queue
+        vt = Thread(target=validator_thread,
+                    args=(validator_threads[cache_server]['queue'],
+                          cache_server))
+        vt.start()
+        validator_threads[cache_server]['thread'] = vt
+
     except Exception, e:
         print_error("Error restarting validator thread (%s), failed with %s" %
                     (cache_server,e.message))
@@ -216,9 +253,13 @@ stop_validator_thread
     - helper function to stop a validator thread after an error
 """
 def stop_validator_thread(cache_server):
+    print_log("stopping validator thread (%s)" % cache_server)
     validator_threads_lock.acquire()
     try:
         global validator_threads
+        validator_threads[cache_server]['queue'].put("STOP")
+        if validator_threads[cache_server]['thread'].is_alive():
+            validator_threads[cache_server]['thread'].join()
         del validator_threads[cache_server]
     except Exception, e:
         print_error("Error stopping validator thread (%s), failed with %s" %
@@ -235,4 +276,13 @@ if __name__ == "__main__":
         print_error(traceback.format_exc())
         print_error("An error occurred. Exiting...")
     finally:
+        for v in validator_threads:
+            if validator_threads[v]['thread'].is_alive():
+                print ("Waiting for validator thread to terminate ...")
+                validator_threads[v]['queue'].put("STOP")
+                validator_threads[v]['thread'].join()
+        maintenance_thread_queue.put("STOP")
+        if (maintenance_thread != None) and (maintenance_thread.is_alive()):
+            print ("Waiting for maintenance thread to terminate ...")
+            maintenance_thread.join()
         sys.exit()
