@@ -5,9 +5,9 @@ system*) of an IP prefix announced by the BGP (*Border Gateway Protocol*)
 control plane of the Internet. For the validation process RBV uses the
 [RTRlib][rtrlib] to access and query RPKI cache servers.
 
-It offers a RESTful interface to web-applications for validation queries, and
+It offers a RESTful interface to web-applications for validation queries, and a
 simple website offering the same service in a user-friendly manner. Further, it
-is the backend for the RPKI browser plugin available for [Firefox][firefox]
+is also a backend for the RPKI browser plugin available for [Firefox][firefox]
 and [Chrome][chrome].
 
 ## requirements

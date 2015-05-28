@@ -14,21 +14,36 @@ file_lock = Lock()
 validate_v11
 """
 def validate_v11(request):
-    if "cache_server" not in request.form:
-        return "No cache server defined."
-    if "prefix" not in request.form:
-        return "No IP prefix defined."
-    if "asn" not in request.form:
-        return "No AS number defined."
+    if request.method == 'POST':
+        if "cache_server" not in request.form:
+            return "No cache server defined."
+        if "prefix" not in request.form:
+            return "No IP prefix defined."
+        if "asn" not in request.form:
+            return "No AS number defined."
 
-    cache_server = str(request.form['cache_server']).strip()
-    prefix = str(request.form['prefix']).strip()
+        cache_server = str(request.form['cache_server']).strip()
+        prefix = str(request.form['prefix']).strip()
+        asn = str(request.form['asn']).strip()
+    elif request.method == 'GET':
+        if "cache_server" not in request.args:
+            return "No cache server defined."
+        if "prefix" not in request.args:
+            return "No IP prefix defined."
+        if "asn" not in request.args:
+            return "No AS number defined."
+
+        cache_server = str(request.args['cache_server']).strip()
+        prefix = str(request.args['prefix']).strip()
+        asn = str(request.args['asn']).strip()
+    else:
+        return "Invalid request"
+
     prefix_array = prefix.split("/")
     if len(prefix_array) != 2:
         return "Invalid IP Prefix"
     network = str(prefix_array[0]).strip()
     masklen = str(prefix_array[1]).strip()
-    asn = str(request.form['asn']).strip()
     url = request.url
     remote_addr = "0.0.0.0"
     if request.headers.getlist("X-Forwarded-For"):
