@@ -19,4 +19,6 @@ warning = True
 
 # log validation request/queries, file format:
 #   ClientIP;ClientOS;ClientBrowser;RequestURL;CacheServer;Prefix;ASN;Validity
-validation_log = {"enabled":True, "file": rbv_base_path + "/validation.log"}
+validation_log = {"enabled":False, "file": rbv_base_path + "/validation.log"}
+# log maintenance information, i.e., access and errors
+maintenance_log = {"enabled":False, "file": rbv_base_path + "/maintenance.log"}

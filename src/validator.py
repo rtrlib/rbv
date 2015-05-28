@@ -1,5 +1,6 @@
 from util import *
-from settings import bgp_validator_server, maintenance_timeout, validator_path
+from settings import bgp_validator_server, validator_path, \
+                     maintenance_timeout, maintenance_log
 
 import json
 import Queue
@@ -73,6 +74,10 @@ def maintenance_thread():
                             ", errors: " + errors_str
                             )
                 print_log(mnt_str)
+                if maintenance_log['enabled']:
+                    with open(maintenance_log['file'],"ab") as f:
+                        f.write(mnt_str+'\n')
+
         except Exception, e:
             print_error("Error during maintenance! Failed with %s" % e.message)
         finally:
