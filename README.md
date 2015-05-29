@@ -7,8 +7,8 @@ control plane of the Internet. For the validation process RBV uses the
 
 It offers a RESTful interface to web-applications for validation queries, and a
 simple website offering the same service in a user-friendly manner. Further, it
-is also a backend for the RPKI browser plugin available for [Firefox][firefox]
-and [Chrome][chrome].
+is also a generic backend for the RPKI browser plugin, that is available for
+[Firefox][firefox] and [Chrome][chrome].
 
 ## requirements
 
