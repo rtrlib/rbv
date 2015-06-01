@@ -12,6 +12,31 @@ from werkzeug.useragents import UserAgent
 
 file_lock = Lock()
 
+## private functions
+
+"""
+_log
+
+    - internal function for logging
+"""
+def _log(info):
+    if validation_log['enabled']:
+        try:
+            file_lock.acquire()
+            with open(validation_log['file'], "ab") as f:
+                ventry = ';'.join(str(x) for x in info)
+                f.write(ventry+'\n')
+        except Exception, e:
+            print_error("Error writing validation log, failed with: %s" %
+                        e.message)
+        finally:
+            file_lock.release()
+
+"""
+_check_request
+
+    - internal function to check request params
+"""
 def _check_request(request, version):
     if request.method == 'POST':
         if "cache_server" not in request.form:
@@ -40,13 +65,58 @@ def _check_request(request, version):
     return None
 
 """
+_validate
+
+    - internal function, doing actual validation
+"""
+def _validate(query):
+    rbv_host = bgp_validator_server['host']
+    rbv_port = int(bgp_validator_server['port'])
+    validity_nr = "-127"
+    print_info("query JSON: " + json.dumps(query))
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print_info("Socket created")
+    #Bind socket to local host and port
+    try:
+        s.connect((rbv_host, rbv_port))
+    except socket.error as msg:
+        print_error("Bind failed. Error Code : " + str(msg[0]) +
+                    " Message " + msg[1])
+        s.close()
+        return "Error connecting to bgp validator!"
+    print_info("Socket bind complete")
+    # send query
+    try:
+        s.sendall(json.dumps(query))
+        data = s.recv(1024)
+    except Exception, e:
+        print_error("Error sending query, failed with: %s" % e.message)
+    else:
+        try:
+            resp = json.loads(data)
+        except:
+            print_error("Error decoding JSON!")
+        else:
+            if 'validity' in resp:
+                validity_nr = resp['validity']
+    finally:
+        s.close()
+    return validity_nr
+
+## public functions
+
+"""
 validate
+
+ - handels validation queries for v1 (v1.1) and v2 REST API calls
 """
 def validate(request, version):
+    # check if request contains needed values
     check = _check_request(request, version)
     resolve_url = False
     if check is not None:
         return check
+    # handle v1.1 and v2.0 accordingly
     if version == 1:
         if request.method == 'POST':
             cache_server = str(request.form['cache_server']).strip()
@@ -56,7 +126,7 @@ def validate(request, version):
             cache_server = str(request.args['cache_server']).strip()
             prefix = str(request.args['prefix']).strip()
             asn = str(request.args['asn']).strip()
-        # end version 1
+        # end v1.1
     elif version == 2:
         if request.method == 'POST':
             cache_server = str(request.form['cache_server']).strip()
@@ -88,15 +158,16 @@ def validate(request, version):
         except Exception, e:
             print_error("Error mapping IP to AS, failed with: %s" % e.message)
             return "Mapping error"
-        # end version 2
+        # end v2.0
     else:
-        return "Invalid api version"
-
+        return "Invalid version information"
+    # split prefix
     prefix_array = prefix.split("/")
     if len(prefix_array) != 2:
         return "Invalid IP Prefix"
     network = str(prefix_array[0]).strip()
     masklen = str(prefix_array[1]).strip()
+    # gather meta data
     url = request.url
     remote_addr = "0.0.0.0"
     if request.headers.getlist("X-Forwarded-For"):
@@ -110,20 +181,18 @@ def validate(request, version):
     print_info( "Client IP: " + remote_addr +
                 ", OS: " + platform +
                 ", browser: " + browser)
-
-
+    # query data
     query = dict()
     query['cache_server'] = cache_server
     query['network'] = network
     query['masklen'] = masklen
     query['asn'] = asn
     validity_nr = _validate(query)
-
+    # logging infos
     info = [remote_addr,platform,browser,url,
             cache_server,prefix,asn,str(validity_nr)]
-
     _log(info)
-
+    # JSON response
     validity = dict()
     if version == 2:
         validity['ip'] = ip
@@ -139,6 +208,8 @@ def validate(request, version):
 
 """
 validate_v10
+
+    - for backwards compatibility, otherwise deprecated
 """
 def validate_v10(ip, mask, asn):
     host = default_cache_server["host"]
@@ -152,53 +223,3 @@ def validate_v10(ip, mask, asn):
 
     validity_nr = get_validity_nr(validation_result_string)
     return get_validation_message(validity_nr)
-
-"""
-_validate
-"""
-def _validate(query):
-    rbv_host = bgp_validator_server['host']
-    rbv_port = int(bgp_validator_server['port'])
-    validity_nr = "-127"
-    print_info("query JSON: " + json.dumps(query))
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print_info("Socket created")
-    #Bind socket to local host and port
-    try:
-        s.connect((rbv_host, rbv_port))
-    except socket.error as msg:
-        print_error("Bind failed. Error Code : " + str(msg[0]) +
-                    " Message " + msg[1])
-        s.close()
-        return "Error connecting to bgp validator!"
-    print_info("Socket bind complete")
-
-    try:
-        s.sendall(json.dumps(query))
-        data = s.recv(1024)
-    except Exception, e:
-        print_error("Error sending query, failed with: %s" % e.message)
-    else:
-        try:
-            resp = json.loads(data)
-        except:
-            print_error("Error decoding JSON!")
-        else:
-            if 'validity' in resp:
-                validity_nr = resp['validity']
-    finally:
-        s.close()
-    return validity_nr
-
-def _log(info):
-    if validation_log['enabled']:
-        try:
-            file_lock.acquire()
-            with open(validation_log['file'], "ab") as f:
-                ventry = ';'.join(str(x) for x in info)
-                f.write(ventry+'\n')
-        except Exception, e:
-            print_error("Error writing validation log, failed with: %s" %
-                        e.message)
-        finally:
-            file_lock.release()
