@@ -44,6 +44,7 @@ validate
 """
 def validate(request, version):
     check = _check_request(request, version)
+    resolve_url = False
     if check is not None:
         return check
     if version == 1:
@@ -65,10 +66,21 @@ def validate(request, version):
             cache_server = str(request.args['cache_server']).strip()
             host = str(request.args['host']).strip()
             ip2as = str(request.args['ip2as']).strip()
+        # if standard url, parse it and get hostname
         if host.find('://') != -1:
             url = urlparse(host)
             host = url.hostname
+        # if url w/o scheme and path, but with port
+        elif host.find(':') != -1:
+            port = host.find('/')
+            host = host[:port]
+        # if url w/o scheme and port, but with path
+        elif host.find('/') != -1:
+            path = host.find('/')
+            host = host[:path]
         ip = socket.gethostbyname(host)
+        if ip != host:
+            resolve_url = True
         try:
             res = map_cymru(ip)
             prefix = res['prefix']
@@ -115,74 +127,9 @@ def validate(request, version):
     validity = dict()
     if version == 2:
         validity['ip'] = ip
-    validity['prefix'] = prefix
-    validity['asn'] = asn
-    validity['cache_server'] = cache_server
-    validity['code'] = validity_nr
-    validity['message'] = get_validation_message(validity_nr)
-    return json.dumps(validity, sort_keys=True, indent=2, separators=(',', ': '))
-
-"""
-validate_v11
-"""
-def validate_v11(request):
-    if request.method == 'POST':
-        if "cache_server" not in request.form:
-            return "No cache server defined."
-        if "prefix" not in request.form:
-            return "No IP prefix defined."
-        if "asn" not in request.form:
-            return "No AS number defined."
-
-        cache_server = str(request.form['cache_server']).strip()
-        prefix = str(request.form['prefix']).strip()
-        asn = str(request.form['asn']).strip()
-    elif request.method == 'GET':
-        if "cache_server" not in request.args:
-            return "No cache server defined."
-        if "prefix" not in request.args:
-            return "No IP prefix defined."
-        if "asn" not in request.args:
-            return "No AS number defined."
-
-        cache_server = str(request.args['cache_server']).strip()
-        prefix = str(request.args['prefix']).strip()
-        asn = str(request.args['asn']).strip()
-    else:
-        return "Invalid request"
-
-    prefix_array = prefix.split("/")
-    if len(prefix_array) != 2:
-        return "Invalid IP Prefix"
-    network = str(prefix_array[0]).strip()
-    masklen = str(prefix_array[1]).strip()
-    url = request.url
-    remote_addr = "0.0.0.0"
-    if request.headers.getlist("X-Forwarded-For"):
-        remote_addr = request.headers.getlist("X-Forwarded-For")[0]
-    else:
-        remote_addr = request.remote_addr
-    ua_str = str(request.user_agent)
-    ua = UserAgent(ua_str)
-    platform = ua.platform
-    browser = ua.browser
-    print_info( "Client IP: " + remote_addr +
-                ", OS: " + platform +
-                ", browser: " + browser)
-
-    query = dict()
-    query['cache_server'] = cache_server
-    query['network'] = network
-    query['masklen'] = masklen
-    query['asn'] = asn
-    validity_nr = _validate(query)
-
-    info = [remote_addr,platform,browser,url,
-            cache_server,prefix,asn,str(validity_nr)]
-    _log(info)
-
-    validity = dict()
-    validity['ip'] = ip
+        validity['resolved'] = resolve_url
+    if resolve_url:
+        validity['hostname'] = host
     validity['prefix'] = prefix
     validity['asn'] = asn
     validity['cache_server'] = cache_server

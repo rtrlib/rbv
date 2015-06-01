@@ -9,7 +9,7 @@
     <div id="input1" style="width:100%" class="input">
     <fieldset>
       <legend>Validate IP prefix : Origin AS</legend>
-      <form method="post" action="http://localhost:5000/validator/v1.1">
+      <form method="post" action="http://localhost:5000/validator/api/v1">
         <label for="prefix">IP prefix</label>
         <input type="text" id="prefix" name="prefix" maxlength="18" size="30"/>
         <br/>
@@ -28,7 +28,7 @@
     <div id="input2" style="width:100%" class="input">
     <fieldset>
       <legend class="fs_legend">Map and validate IP address</legend>
-      <form method="post" action="http://localhost:5000/validator/v2.0">
+      <form method="post" action="http://localhost:5000/validator/api/v2">
         <label for="host">Host IP|FQDN</label>
         <input type="text" id="host" name="host" size="30"/>
         <br/>
