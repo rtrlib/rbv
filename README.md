@@ -91,18 +91,59 @@ Restart the apache webserver or service.
 **Note2:** depending on your apache configuration (multiple websites), further
 steps might be necessary.
 
+## interfaces
+
+RBV provides simple REST calls to validate the origin AS (*autonomous system*)
+of a IP prefix announced by BGP. It also has a human user-friendly webinterface,
+just point your browser to the URL of your webserver, where RBV is deployed -
+or: http://your.webserver.net/html/validate.html .
+
+The REST API is divided in two distinct calls:
+
+1. ```your.webserver.net/validation/api/v1```
+ * HTTP methods: GET, POST
+ * parameters: (prefix, asn, cache-server)
+ * response: (asn,cache-server,code,message,prefix)
+2. ```your.webserver.net/validation/api/v2```
+ * HTTP methods: GET, POST
+ * parameters: (host,ip2as,cache-server)
+ * response: (asn,cache-server,code,ip,ip2as,message,prefix,resolved[,hostname])
+
+GET example APIv1 to validate origin AS (32934) of IP prefix (173.252.64.0/18,
+  Facebook) using cache-server ```rpki-validator.realmv6.org``` (with Port 8282):
+```
+http://your.webserver.net/validation/api/v1?cache-server=rpki-validator.realmv6.org%3A8282&prefix=173.252.64.0/18&asn=32934
+```
+
+GET example APIv2 to validate host (```facebook.com```) using IP2AS mapping of
+[Team Cymru][cymru] and cache-server ```rpki-validator.realmv6.org``` (with
+  Port 8282):
+```
+http://your.webserver.net/validation/api/v1?cache-server=rpki-validator.realmv6.org%3A8282&host=facebook.com&ip2as=cymru
+```
+
 ## RPKI browser plugin
 
 [Firefox-Addon][firefox]
 
 [Chrome-Extension][chrome]
 
-## references
+## web-links
 
+* [cymru], IP2AS mapping service of Team Cymru
+* [flask], a Python web microframework
+* [virtualenv], like *chroot* for Python
+* [wsgi], Apache integration of Python apps
+
+* [REST BGP validator][rbv]@github, project repository
+* [RTRlib][rtrlib]@github, C-library to access RPKI caches
+* [Firefox-Addon][firefox]@github, the RPKI validation browser plugin for Firefox
+* [Chrome-Extension][chrome]@github, the RPKI validation browser plugin for Chrome
+
+[cymru]: http://www.team-cymru.org/IP-ASN-mapping.html
 [flask]: http://flask.pocoo.org
 [virtualenv]: http://docs.python-guide.org/en/latest/dev/virtualenvs/
 [wsgi]: http://flask.pocoo.org/docs/0.10/deploying/mod_wsgi/
-
 [rbv]: https://github.com/rtrlib/REST.git
 [rtrlib]: https://github.com/rtrlib/rtrlib.git
 [firefox]: https://github.com/rtrlib/firefox-addon.git

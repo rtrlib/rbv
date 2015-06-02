@@ -196,6 +196,7 @@ def validate(request, version):
     validity = dict()
     if version == 2:
         validity['ip'] = ip
+        validity['ip2as'] = ip2as
         validity['resolved'] = resolve_url
     if resolve_url:
         validity['hostname'] = host
