@@ -18,6 +18,7 @@ validator_threads_lock = Lock()
 validator_threads = dict()
 maintenance_thread = None
 maintenance_thread_queue = Queue.Queue()
+mlog_lines = 0
 
 """
 validator_main
@@ -90,9 +91,16 @@ def maintenance_thread(mtq):
                             ", errors: " + errors_str
                             )
                 print_log(mnt_str)
+                global mlog_lines
                 if maintenance_log['enabled']:
+                    if (maintenance_log['rotate'] and
+                        os.path.isfile(maintenance_log['file']) and
+                        (mlog_lines==0 or mlog_lines==maintenance_log['maxlines'])):
+                                log_rotate(maintenance_log['file'])
+                                mlog_lines = 0
                     with open(maintenance_log['file'],"ab") as f:
                         f.write(mnt_str+'\n')
+                    mlog_lines = mlog_lines+1
 
         except Exception, e:
             print_error("Error during maintenance! Failed with %s" % e.message)

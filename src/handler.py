@@ -5,13 +5,14 @@ from ip2as import map_cymru
 import json
 import socket
 import sys
+import os.path
 from threading import Lock
 from subprocess import PIPE, Popen
 from urlparse import urlparse
 from werkzeug.useragents import UserAgent
 
 file_lock = Lock()
-
+vlog_lines = 0
 ## private functions
 
 """
@@ -23,14 +24,23 @@ def _log(info):
     if validation_log['enabled']:
         try:
             file_lock.acquire()
+            global vlog_lines
+            # got lock, now check if logrotate is enabled
+            if (validation_log['rotate'] and
+                os.path.isfile(validation_log['file']) and
+                (vlog_lines==0 or vlog_lines==validation_log['maxlines'])):
+                        log_rotate(validation_log['file'])
+                        vlog_lines = 0
             with open(validation_log['file'], "ab") as f:
                 ventry = ';'.join(str(x) for x in info)
                 f.write(ventry+'\n')
+            vlog_lines = vlog_lines+1
         except Exception, e:
             print_error("Error writing validation log, failed with: %s" %
                         e.message)
         finally:
             file_lock.release()
+
 
 """
 _check_request

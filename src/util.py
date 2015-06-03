@@ -1,6 +1,10 @@
 from __future__ import print_function
 import settings
 import sys
+import gzip
+
+import os
+from datetime import datetime
 
 def print_log(*objs):
     if settings.logging or settings.verbose:
@@ -16,6 +20,21 @@ def print_warn(*objs):
 
 def print_error(*objs):
     print("[ERROR] ", *objs, file=sys.stderr)
+
+"""
+log_rotate
+
+ - rotates a logfile, that is rename and gzip compression
+ - note: this is not thread safe, so ensure zero file access when running this!
+"""
+def log_rotate(file):
+    now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+    f_in = open(file, 'rb')
+    f_out = gzip.open(file+"."+now_str+".gz", 'wb')
+    f_out.writelines(f_in)
+    f_out.close()
+    f_in.close()
+    os.remove(file)
 
 """
 get_validity_nr
