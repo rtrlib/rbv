@@ -202,7 +202,7 @@ def validate(request, version):
     validity_nr = _validate(query)
     # logging infos
     log_datetime = datetime.now()
-    log_ts_str = log_datetime.strftime('%Y-%m-%d %H:%M:%S'))
+    log_ts_str = log_datetime.strftime('%Y-%m-%d %H:%M:%S')
     info = [log_ts_str,remote_addr,platform,browser,url,
             cache_server,prefix,asn,str(validity_nr)]
     _log(info)
