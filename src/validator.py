@@ -99,7 +99,7 @@ def maintenance_thread(mtq):
                     mlog_lines = mlog_lines+1
                 if ((thread_max_errors > 0) and
                    (validator_threads[cs]['errors'] > thread_max_errors)):
-                   print_log("RESTART thread (%s) due to errors!" % cs)
+                    print_log("RESTART thread (%s) due to errors!" % cs)
                     restart_validator_thread(cs)
 
         except Exception, e:
