@@ -67,6 +67,7 @@ def maintenance_thread(mtq):
     timeout = datetime.now() + timedelta(0,maintenance_timeout)
     while True:
         now = datetime.now()
+        restart_threads = list()
         if not mtq.empty():
             break
         if now < timeout:
@@ -100,12 +101,14 @@ def maintenance_thread(mtq):
                 if ((thread_max_errors > 0) and
                    (validator_threads[cs]['errors'] > thread_max_errors)):
                     print_log("RESTART thread (%s) due to errors!" % cs)
-                    restart_validator_thread(cs)
+                    restart_threads.append(cs)
 
         except Exception, e:
             print_error("Error during maintenance! Failed with %s" % e.message)
         finally:
             validator_threads_lock.release()
+        for r in restart_threads:
+            restart_validator_thread(r)
         timeout = datetime.now() + timedelta(0,maintenance_timeout)
         print_info("maintenance_thread sleeps until: " + timeout.strftime("%Y-%m-%d %H:%M:%S") )
 
