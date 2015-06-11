@@ -75,7 +75,7 @@ def maintenance_thread(mtq):
             continue
         try:
             validator_threads_lock.acquire()
-            for cs in validator_threads.keys():
+            for cs in validator_threads:
                 dt_now = datetime.now()
                 dt_start =  validator_threads[cs]['start']
                 dt_access =  validator_threads[cs]['access']
@@ -98,10 +98,10 @@ def maintenance_thread(mtq):
                     with open(maintenance_log['file'],"ab") as f:
                         f.write(mnt_str+'\n')
                     mlog_lines = mlog_lines+1
-                if ((thread_max_errors > 0) and
-                   (validator_threads[cs]['errors'] > thread_max_errors)):
-                    print_log("RESTART thread (%s) due to errors!" % cs)
-                    restart_threads.append(cs)
+                if thread_max_errors > 0:
+                    if len(validator_threads[cs]['errors']) > thread_max_errors:
+                        print_log("RESTART thread (%s) due to errors!" % cs)
+                        restart_threads.append(cs)
 
         except Exception, e:
             print_error("Error during maintenance! Failed with %s" % e.message)
