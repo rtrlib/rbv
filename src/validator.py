@@ -251,6 +251,7 @@ def restart_validator_thread(cache_server):
                           cache_server))
         vt.start()
         validator_threads[cache_server]['thread'] = vt
+        validator_threads[cache_server]['errors'] = list()
 
     except Exception, e:
         print_error("Error restarting validator thread (%s), failed with %s" %
