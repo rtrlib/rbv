@@ -3,17 +3,19 @@ from settings import *
 from ip2as import map_cymru
 
 import json
+import os.path
 import socket
 import sys
-import os.path
-from threading import Lock
+from datetime import datetime
 from subprocess import PIPE, Popen
+from threading import Lock
 from urlparse import urlparse
 from werkzeug.useragents import UserAgent
 
 file_lock = Lock()
 vlog_lines = 0
-## private functions
+
+## private functions ##
 
 """
 _log
@@ -113,7 +115,7 @@ def _validate(query):
         s.close()
     return validity_nr
 
-## public functions
+## public functions ##
 
 """
 validate
@@ -199,7 +201,9 @@ def validate(request, version):
     query['asn'] = asn
     validity_nr = _validate(query)
     # logging infos
-    info = [remote_addr,platform,browser,url,
+    log_datetime = datetime.now()
+    log_ts_str = log_datetime.strftime('%Y-%m-%d %H:%M:%S'))
+    info = [log_ts_str,remote_addr,platform,browser,url,
             cache_server,prefix,asn,str(validity_nr)]
     _log(info)
     # JSON response
