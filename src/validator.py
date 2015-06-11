@@ -97,8 +97,8 @@ def maintenance_thread(mtq):
                     with open(maintenance_log['file'],"ab") as f:
                         f.write(mnt_str+'\n')
                     mlog_lines = mlog_lines+1
-                if (thread_max_errors > 0) and
-                   (validator_threads[cs]['errors'] > thread_max_errors):
+                if ((thread_max_errors > 0) and
+                   (validator_threads[cs]['errors'] > thread_max_errors)):
                    print_log("RESTART thread (%s) due to errors!" % cs)
                     restart_validator_thread(cs)
 
