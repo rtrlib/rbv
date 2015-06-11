@@ -82,14 +82,10 @@ def maintenance_thread(mtq):
                 errors_str = str( len(validator_threads[cs]['errors']) )
                 count_str = str( validator_threads[cs]['count'] )
                 dt_start_str = dt_start.strftime("%Y-%m-%d %H:%M:%S")
+                dt_now_str = dt_now.strftime("%Y-%m-%d %H:%M:%S")
                 dt_access_str = dt_access.strftime("%Y-%m-%d %H:%M:%S")
-                mnt_str = ( "thread: " + cs +
-                            ", started: " + dt_start_str +
-                            ", last access: " + dt_access_str +
-                            ", runtime: " + runtime_str + "s" +
-                            ", counter: " + count_str +
-                            ", errors: " + errors_str
-                            )
+                # timestamp;start time;last access;cache-server;counter;errors
+                mnt_str = ';'.join([dt_now_str,dt_start_str,dt_access_str,cs,count_str,errors_str])
                 print_log(mnt_str)
                 global mlog_lines
                 if maintenance_log['enabled']:
