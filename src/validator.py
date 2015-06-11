@@ -1,6 +1,6 @@
 from util import *
 from settings import bgp_validator_server, validator_path, \
-                     maintenance_timeout, maintenance_log
+                     maintenance_timeout, maintenance_log, thread_max_errors
 
 import json
 import Queue
@@ -97,6 +97,10 @@ def maintenance_thread(mtq):
                     with open(maintenance_log['file'],"ab") as f:
                         f.write(mnt_str+'\n')
                     mlog_lines = mlog_lines+1
+                if (thread_max_errors > 0) and
+                   (validator_threads[cs]['errors'] > thread_max_errors):
+                   print_log("RESTART thread (%s) due to errors!" % cs)
+                    restart_validator_thread(cs)
 
         except Exception, e:
             print_error("Error during maintenance! Failed with %s" % e.message)

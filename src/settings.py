@@ -7,11 +7,10 @@ default_cache_server = {"host":"rpki-validator.realmv6.org", "port":"8282"}
 bgp_validator_server = {"host":"localhost", "port":"6414"}
 www_validator_server = {"host":"localhost", "port":"5000"}
 
-# maintenance
+# maintenance timer
 maintenance_timeout = 300
-# not in use, yet
-thread_timeout = maintenance_timeout*5
-thread_errors = 42
+# restart thread after N errors, disable = 0
+thread_max_errors = 42
 
 # output
 logging = True
