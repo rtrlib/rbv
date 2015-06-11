@@ -6,9 +6,9 @@ control plane of the Internet. For the validation process RBV uses the
 [RTRlib][rtrlib] to access and query RPKI cache servers.
 
 It offers a RESTful interface to web-applications for validation queries, and a
-simple website offering the same service in a user-friendly manner. Further, it
-is also a generic backend for the RPKI browser plugin, that is available for
-[Firefox][firefox] and [Chrome][chrome].
+simple website providing the same functionality in a user-friendly manner.
+Further, it is also a generic backend for the RPKI browser plugin, that is
+available for [Firefox][firefox] and [Chrome][chrome].
 
 ## requirements
 
@@ -104,7 +104,7 @@ The REST API is divided in two distinct calls:
  * HTTP methods: GET, POST
  * parameters: (prefix, asn, cache-server)
  * response: (asn,cache-server,code,message,prefix)
-2. `your.webserver.net/validation/api/v2
+2. `your.webserver.net/validation/api/v2`
  * HTTP methods: GET, POST
  * parameters: (host,ip2as,cache-server)
  * response: (asn,cache-server,code,ip,ip2as,message,prefix,resolved[,hostname])
