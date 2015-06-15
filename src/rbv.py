@@ -106,7 +106,7 @@ def _modify_response(rdata):
     ret = dict()
     vr = dict()
     route = dict()
-    route['origin_asn'] = rdata['asn']
+    route['origin_asn'] = 'AS'+rdata['asn']
     route['prefix'] = rdata['prefix']
     validity = dict()
     validity['state'] = rdata['message']
@@ -132,7 +132,7 @@ class RAv1(Resource):
         vdata['version'] = 1
         vdata['cache_server'] = args['cache_server']
         vdata['prefix'] = prefix+"/"+masklen
-        vdata['asn'] = asnum
+        vdata['asn'] = asnum[2:]
         response_data = handler.validate(vdata)
         # logging infos
         log_datetime = datetime.now()
