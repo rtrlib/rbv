@@ -190,7 +190,7 @@ def validator_thread(queue, cache_server):
         try:
             validator_process.stdin.write(bgp_entry_str + '\n')
         except Exception, e:
-            print_error("Error writing to validator process, failed with %s!" %
+            print_error("Error writing validator process, failed with %s!" %
                         e.message)
             restart_validator_thread(cache_server)
             run = False
@@ -198,7 +198,7 @@ def validator_thread(queue, cache_server):
         try:
             validation_result = validator_process.stdout.readline().strip()
         except Exception, e:
-            print_error("Error reading from validator process, failed with %s!" %
+            print_error("Error reading validator process, failed with %s!" %
                         e.message)
             restart_validator_thread(cache_server)
             validation_result = ""

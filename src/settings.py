@@ -4,6 +4,7 @@ validator_path = rbv_base_path + "/util/cli-validator"
 
 # connections
 default_cache_server = {"host":"rpki-validator.realmv6.org", "port":"8282"}
+default_ip2as_mapping = {"name":"cymru"}
 bgp_validator_server = {"host":"localhost", "port":"6414"}
 www_validator_server = {"host":"localhost", "port":"5000"}
 

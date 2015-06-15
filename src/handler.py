@@ -3,78 +3,13 @@ from settings import *
 from ip2as import map_cymru
 
 import json
-import os.path
 import socket
 import sys
 from datetime import datetime
 from subprocess import PIPE, Popen
-from threading import Lock
 from urlparse import urlparse
-from werkzeug.useragents import UserAgent
-
-file_lock = Lock()
-vlog_lines = 0
 
 ## private functions ##
-
-"""
-_log
-
-    - internal function for logging
-"""
-def _log(info):
-    if validation_log['enabled']:
-        try:
-            file_lock.acquire()
-            global vlog_lines
-            # got lock, now check if logrotate is enabled
-            if (validation_log['rotate'] and
-                os.path.isfile(validation_log['file']) and
-                (vlog_lines==0 or vlog_lines==validation_log['maxlines'])):
-                        log_rotate(validation_log['file'])
-                        vlog_lines = 0
-            with open(validation_log['file'], "ab") as f:
-                ventry = ';'.join(str(x) for x in info)
-                f.write(ventry+'\n')
-            vlog_lines = vlog_lines+1
-        except Exception, e:
-            print_error("Error writing validation log, failed with: %s" %
-                        e.message)
-        finally:
-            file_lock.release()
-
-
-"""
-_check_request
-
-    - internal function to check request params
-"""
-def _check_request(request, version):
-    if request.method == 'POST':
-        if "cache_server" not in request.form:
-            return "No cache server defined."
-        if (version == 1) and ("prefix" not in request.form):
-            return "No IP prefix defined."
-        if (version == 1) and ("asn" not in request.form):
-            return "No AS number defined."
-        if (version == 2) and ("host" not in request.form):
-            return "No IP address defined"
-        if (version == 2) and ("ip2as" not in request.form):
-            return "No IP2AS mapping defined"
-    elif request.method == 'GET':
-        if "cache_server" not in request.args:
-            return "No cache server defined."
-        if (version == 1) and ("prefix" not in request.args):
-            return "No IP prefix defined."
-        if (version == 1) and ("asn" not in request.args):
-            return "No AS number defined."
-        if (version == 2) and ("host" not in request.args):
-            return "No IP address defined"
-        if (version == 2) and ("ip2as" not in request.args):
-            return "No IP2AS mapping defined"
-    else:
-        return "Invalid request"
-    return None
 
 """
 _validate
@@ -82,6 +17,7 @@ _validate
     - internal function, doing actual validation
 """
 def _validate(query):
+    print_info("CALL _validate")
     rbv_host = bgp_validator_server['host']
     rbv_port = int(bgp_validator_server['port'])
     validity_nr = "-127"
@@ -122,32 +58,18 @@ validate
 
  - handels validation queries for v1 (v1.1) and v2 REST API calls
 """
-def validate(request, version):
-    # check if request contains needed values
-    check = _check_request(request, version)
+def validate(vdata):
+    print_log("CALL validate")
     resolve_url = False
-    if check is not None:
-        return check
+    cache_server = vdata['cache_server']
     # handle v1.1 and v2.0 accordingly
-    if version == 1:
-        if request.method == 'POST':
-            cache_server = str(request.form['cache_server']).strip()
-            prefix = str(request.form['prefix']).strip()
-            asn = str(request.form['asn']).strip()
-        elif request.method == 'GET':
-            cache_server = str(request.args['cache_server']).strip()
-            prefix = str(request.args['prefix']).strip()
-            asn = str(request.args['asn']).strip()
+    if vdata['version'] == 1:
+        prefix = vdata['prefix']
+        asn = vdata['asn']
         # end v1.1
-    elif version == 2:
-        if request.method == 'POST':
-            cache_server = str(request.form['cache_server']).strip()
-            host = str(request.form['host']).strip()
-            ip2as = str(request.form['ip2as']).strip()
-        elif request.method == 'GET':
-            cache_server = str(request.args['cache_server']).strip()
-            host = str(request.args['host']).strip()
-            ip2as = str(request.args['ip2as']).strip()
+    elif vdata['version'] == 2:
+        host = vdata['host']
+        ip2as = vdata['ip2as']
         # if standard url, parse it and get hostname
         if host.find('://') != -1:
             url = urlparse(host)
@@ -179,20 +101,6 @@ def validate(request, version):
         return "Invalid IP Prefix"
     network = str(prefix_array[0]).strip()
     masklen = str(prefix_array[1]).strip()
-    # gather meta data
-    url = request.url
-    remote_addr = "0.0.0.0"
-    if request.headers.getlist("X-Forwarded-For"):
-        remote_addr = request.headers.getlist("X-Forwarded-For")[0]
-    else:
-        remote_addr = request.remote_addr
-    ua_str = str(request.user_agent)
-    ua = UserAgent(ua_str)
-    platform = ua.platform
-    browser = ua.browser
-    print_info( "Client IP: " + remote_addr +
-                ", OS: " + platform +
-                ", browser: " + browser)
     # query data
     query = dict()
     query['cache_server'] = cache_server
@@ -200,15 +108,9 @@ def validate(request, version):
     query['masklen'] = masklen
     query['asn'] = asn
     validity_nr = _validate(query)
-    # logging infos
-    log_datetime = datetime.now()
-    log_ts_str = log_datetime.strftime('%Y-%m-%d %H:%M:%S')
-    info = [log_ts_str,remote_addr,platform,browser,url,
-            cache_server,prefix,asn,str(validity_nr)]
-    _log(info)
     # JSON response
     validity = dict()
-    if version == 2:
+    if vdata['version'] == 2:
         validity['ip'] = ip
         validity['ip2as'] = ip2as
         validity['resolved'] = resolve_url
@@ -219,7 +121,7 @@ def validate(request, version):
     validity['cache_server'] = cache_server
     validity['code'] = validity_nr
     validity['message'] = get_validation_message(validity_nr)
-    return json.dumps(validity, sort_keys=True, indent=2, separators=(',', ': '))
+    return validity
 
 """
 validate_v10
