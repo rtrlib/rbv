@@ -14,6 +14,7 @@ available for [Firefox][firefox] and [Chrome][chrome].
 
 Python modules:
  - [flask]
+ - [flask_restful]
  - werkzeug
 
 these can be installed using `pip`:
@@ -135,6 +136,7 @@ http://your.webserver.net/api/v2/validity/facebook.com
 **web links**
 * [cymru], IP2AS mapping of Team Cymru
 * [flask], a Python web microframework
+* [flask_restful], flask extension to build REST APIs
 * [virtualenv], like *chroot* for Python
 * [wsgi], Apache integration of Python apps
 
@@ -145,6 +147,7 @@ http://your.webserver.net/api/v2/validity/facebook.com
 
 [cymru]: http://www.team-cymru.org/IP-ASN-mapping.html
 [flask]: http://flask.pocoo.org
+[flask_restful]: https://flask-restful.readthedocs.org/
 [virtualenv]: http://docs.python-guide.org/en/latest/dev/virtualenvs/
 [wsgi]: http://flask.pocoo.org/docs/0.10/deploying/mod_wsgi/
 [rbv]: https://github.com/rtrlib/REST.git
