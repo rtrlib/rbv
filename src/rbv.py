@@ -20,6 +20,7 @@ default_cache_server_str = (default_cache_server['host'] + ":" +
 parser.add_argument('cache_server', type=str, default=default_cache_server_str)
 default_ip2as_mapping_str = default_ip2as_mapping['name']
 parser.add_argument('ip2as', type=str, default=default_ip2as_mapping_str)
+parser.add_argument('brief', type=str, default='false')
 
 file_lock = Lock()
 vlog_lines = 0
@@ -125,9 +126,16 @@ class RAv1(Resource):
         _log(info)
         return_data = dict()
         return_data['route'] = dict()
-        return_data['route']['origin_asn'] = asnum
-        return_data['route']['prefix'] = vdata['prefix']
-        return_data['validity'] = response_data['validity']
+        return_data['route']['origin_asn'] = "AS"+response_data['asn']
+        return_data['route']['prefix'] = response_data['prefix']
+
+        brief = args['brief'].lower()
+        if (brief == 'true') or (brief == 'on') or (brief == '1'):
+            return_data['validity'] = dict()
+            return_data['validity']['code'] = response_data['validity']['code']
+            return_data['validity']['state'] = response_data['validity']['state']
+        else:
+            return_data['validity'] = response_data['validity']
         return {"validated_route":return_data}
 
 class RAv2(Resource):
@@ -150,10 +158,15 @@ class RAv2(Resource):
         _log(info)
         return_data = dict()
         return_data['route'] = dict()
-        return_data['route']['origin_asn'] = asnum
-        return_data['route']['prefix'] = vdata['prefix']
-        return_data['validity'] = response_data['validity']
-        #return _modify_response(response_data)
+        return_data['route']['origin_asn'] = "AS"+response_data['asn']
+        return_data['route']['prefix'] = response_data['prefix']
+        brief = args['brief'].lower()
+        if (brief == 'true') or (brief == 'on') or (brief == '1'):
+            return_data['validity'] = dict()
+            return_data['validity']['code'] = response_data['validity']['code']
+            return_data['validity']['state'] = response_data['validity']['state']
+        else:
+            return_data['validity'] = response_data['validity']
         return {"validated_route":return_data}
 
 ### restful API ###
