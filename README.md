@@ -100,30 +100,28 @@ or: http://your.webserver.net/html/validate.html .
 
 The REST API is divided in two distinct calls:
 
-1. `your.webserver.net/validation/api/v1`
- * HTTP methods: GET, POST
- * parameters: (prefix, asn, cache-server)
- * response: (asn,cache-server,code,message,prefix)
-2. `your.webserver.net/validation/api/v2`
- * HTTP methods: GET, POST
- * parameters: (host,ip2as,cache-server)
- * response: (asn,cache-server,code,ip,ip2as,message,prefix,resolved[,hostname])
+1. `your.webserver.net/api/v1/validity/<asn>/<prefix>/<masklen>[?params]`
+ * HTTP methods: GET
+ * parameters: (brief, cache_server)
+ * response: JSON
+2. `your.webserver.net/api/v2/validity/<host>[?params]`
+ * HTTP methods: GET
+ * parameters: (brief, cache_server, ip2as)
+ * response: JSON
 
-GET example APIv1 to validate origin AS (32934) of IP prefix (`173.252.64.0/18`,
+GET example APIv1 to validate origin AS (32934) of IP prefix (`173.252.96.0/19`,
   Facebook) using cache-server `rpki-validator.realmv6.org` (with Port 8282):
 ```
-http://your.webserver.net/validation/api/v1
-  ?cache-server=rpki-validator.realmv6.org%3A8282
-  &prefix=173.252.64.0/18&asn=32934
+http://your.webserver.net/api/v1/validity/AS32934/173.252.96.0/19
+  ?brief=true&cache_server=rpki-validator.realmv6.org:8282
 ```
 
 GET example APIv2 to validate host (`facebook.com`) using IP2AS mapping of
 [Team Cymru][cymru] and cache-server `rpki-validator.realmv6.org` (with
   Port 8282):
 ```
-http://your.webserver.net/validation/api/v1
-  ?cache-server=rpki-validator.realmv6.org%3A8282
-  &host=facebook.com&ip2as=cymru
+http://your.webserver.net/api/v2/validity/facebook.com
+  ?brief=true&cache_server=rpki-validator.realmv6.org:8282&ip2as=cymru
 ```
 
 ## RPKI browser plugin
