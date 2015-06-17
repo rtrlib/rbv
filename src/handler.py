@@ -20,7 +20,7 @@ def _validate(query):
     print_info("CALL _validate")
     rbv_host = bgp_validator_server['host']
     rbv_port = int(bgp_validator_server['port'])
-    validity_nr = "-127"
+    validation_result = None
     print_info("query JSON: " + json.dumps(query))
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print_info("Socket created")
@@ -40,16 +40,14 @@ def _validate(query):
     except Exception, e:
         print_error("Error sending query, failed with: %s" % e.message)
     else:
+        print_info(data)
         try:
-            resp = json.loads(data)
+            validation_result = json.loads(data)
         except:
             print_error("Error decoding JSON!")
-        else:
-            if 'validity' in resp:
-                validity_nr = resp['validity']
     finally:
         s.close()
-    return validity_nr
+    return validation_result
 
 ## public functions ##
 
@@ -107,36 +105,15 @@ def validate(vdata):
     query['network'] = network
     query['masklen'] = masklen
     query['asn'] = asn
-    validity_nr = _validate(query)
+    result = _validate(query)
     # JSON response
-    validity = dict()
     if vdata['version'] == 2:
-        validity['ip'] = ip
-        validity['ip2as'] = ip2as
-        validity['resolved'] = resolve_url
+        result['ip'] = ip
+        result['ip2as'] = ip2as
+        result['resolved'] = resolve_url
     if resolve_url:
-        validity['hostname'] = host
-    validity['prefix'] = prefix
-    validity['asn'] = asn
-    validity['cache_server'] = cache_server
-    validity['code'] = validity_nr
-    validity['message'] = get_validation_message(validity_nr)
-    return validity
-
-"""
-validate_v10
-
-    - for backwards compatibility, otherwise deprecated
-"""
-def validate_v10(ip, mask, asn):
-    host = default_cache_server["host"]
-    port = default_cache_server["port"]
-    cmd = [validator_path, host, port]
-    cproc = Popen(cmd, stdin=PIPE, stdout=PIPE)
-    bgp_entry_str = ip + " " + mask + " " + asn
-    cproc.stdin.write(bgp_entry_str + '\n')
-    validation_result_string = cproc.stdout.readline().strip()
-    cproc.kill()
-
-    validity_nr = get_validity_nr(validation_result_string)
-    return get_validation_message(validity_nr)
+        result['hostname'] = host
+    result['prefix'] = prefix
+    result['asn'] = asn
+    result['cache_server'] = cache_server
+    return result

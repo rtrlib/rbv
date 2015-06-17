@@ -140,10 +140,10 @@ class RAv1(Resource):
         url, remote_addr, platform, browser = _metadata(request)
         info = [log_ts_str, remote_addr, platform, browser,url,
                 response_data['cache_server'], response_data['prefix'],
-                response_data['asn'], response_data['code']]
+                response_data['asn'], response_data['validity']['status']]
         _log(info)
-        return _modify_response(response_data)
-
+        #return _modify_response(response_data)
+        return response_data['validity']
 
 class RAv2(Resource):
     def get(self, host):
@@ -161,9 +161,10 @@ class RAv2(Resource):
         url, remote_addr, platform, browser = _metadata(request)
         info = [log_ts_str, remote_addr, platform, browser,url,
                 response_data['cache_server'], response_data['prefix'],
-                response_data['asn'], response_data['code']]
+                response_data['asn'], response_data['validity']['status']]
         _log(info)
-        return _modify_response(response_data)
+        #return _modify_response(response_data)
+        return response_data['validity']
 
 ### restful API ###
 api.add_resource(RAv1, '/api/v1/validity/<asnum>/<prefix>/<masklen>')
@@ -198,7 +199,24 @@ def online_validator_v20():
             vdata['host'] = str(request.args['host']).strip()
             vdata['ip2as'] = str(request.args['ip2as']).strip()
         response_data = handler.validate(vdata)
-        response_json = json.dumps( response_data, sort_keys=True,
+
+        print_info (response_data)
+
+        response_data_min = dict()
+        response_data_min['cache_server'] = response_data['cache_server']
+        response_data_min['asn'] = response_data['asn']
+        response_data_min['prefix'] = response_data['prefix']
+        response_data_min['message'] = response_data['validity']['status']
+        response_data_min['code'] = response_data['validity']['code']
+        # remap validation code to support old/deprecated plugins
+        if response_data['validity']['code'] == 0:      # valid
+            response_data_min['code'] = 1
+        elif response_data['validity']['code'] == 1:    # notfound
+            response_data_min['code'] = -1
+        elif response_data['validity']['code'] <=4:     # invalid
+            response_data_min['code'] = 0
+
+        response_json = json.dumps( response_data_min, sort_keys=True,
                                     indent=2, separators=(',', ': '))
         response_code = 200
         print_info(response_json)
@@ -208,7 +226,7 @@ def online_validator_v20():
         url, remote_addr, platform, browser = _metadata(request)
         info = [log_ts_str, remote_addr, platform, browser,url,
                 response_data['cache_server'], response_data['prefix'],
-                response_data['asn'], response_data['code']]
+                response_data['asn'], response_data['validity']['status']]
         _log(info)
     return response_json, response_code
 
@@ -235,7 +253,22 @@ def online_validator_v11():
             vdata['prefix'] = str(request.args['prefix']).strip()
             vdata['asn'] = str(request.args['asn']).strip()
         response_data = handler.validate(vdata)
-        response_json = json.dumps( response_data, sort_keys=True,
+
+        response_data_min = dict()
+        response_data_min['cache_server'] = response_data['cache_server']
+        response_data_min['asn'] = response_data['asn']
+        response_data_min['prefix'] = response_data['prefix']
+        response_data_min['message'] = response_data['validity']['status']
+        response_data_min['code'] = response_data['validity']['code']
+        # remap validation code to support old/deprecated plugins
+        if response_data['validity']['code'] == 0:      # valid
+            response_data_min['code'] = 1
+        elif response_data['validity']['code'] == 1:    # notfound
+            response_data_min['code'] = -1
+        elif response_data['validity']['code'] <=4:     # invalid
+            response_data_min['code'] = 0
+
+        response_json = json.dumps( response_data_min, sort_keys=True,
                                     indent=2, separators=(',', ': '))
         print_info(response_json)
         response_code = 200
@@ -245,23 +278,9 @@ def online_validator_v11():
         url, remote_addr, platform, browser = _metadata(request)
         info = [log_ts_str, remote_addr, platform, browser,url,
                 response_data['cache_server'], response_data['prefix'],
-                response_data['asn'], response_data['code']]
+                response_data['asn'], response_data['validity']['status']]
         _log(info)
     return response_json, response_code
-
-@app.route('/validator', methods=['GET', 'POST'])
-def online_validator_v10():
-    print_log ("CALL online_validator_v10")
-    # POSTed variables. check format...
-    ip = str(request.form['ip']).strip()
-    prefix = str(request.form['prefix']).strip()
-    prefix_array = prefix.split("/")
-    if len(prefix_array) != 2:
-        return "Invalid BGP prefix"
-    mask = str(prefix_array[1]).strip()
-    asn = str(request.form['asn']).strip()
-    result_string = handler.validate_v10(ip, mask, asn)
-    return result_string
 
 if __name__ == '__main__':
     app.run(host=www_validator_server['host'],
