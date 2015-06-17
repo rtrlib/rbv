@@ -75,7 +75,7 @@ def _stop_validator_thread(cache_server):
 def _get_validity(validation_result_string):
     validity = dict()
     validity['code'] = 100
-    validity['status'] = 'Error'
+    validity['state'] = 'Error'
     validity['description'] = 'Unknown validation error.'
 
     # check validation result
@@ -107,7 +107,7 @@ def _get_validity(validation_result_string):
             for r in reasons_array:
                 rasn, rprefix, rmin_len, rmax_len = r.split()
                 vrp = dict()
-                vrp['asn'] = rasn
+                vrp['asn'] = "AS"+rasn
                 vrp['prefix'] = rprefix+"/"+rmax_len
                 vrp['max_length'] = rmax_len
                 match = True
@@ -129,7 +129,7 @@ def _get_validity(validation_result_string):
                     validity['reason'] = 'length'
             # END (if validity['code'] == 2)
         # END (if validity['code'] != 1)
-        validity['status'] = validity_state[validity['code']]
+        validity['state'] = validity_state[validity['code']]
         validity['description'] = validity_descr[validity['code']]
     # END (if elif else)
     return validity
@@ -285,7 +285,7 @@ def validator_thread(queue, cache_server):
 
         validity =  _get_validity(validation_result)
         print_info(cache_server + " -> " + network+"/"+masklen +
-                    "(AS"+asn+") -> " + validity['status'])
+                    "(AS"+asn+") -> " + validity['state'])
 
         resp = dict()
         resp['cache_server'] = cache_server

@@ -102,25 +102,6 @@ def _log(info):
         finally:
             file_lock.release()
 
-def _modify_response(rdata):
-    ret = dict()
-    vr = dict()
-    route = dict()
-    route['origin_asn'] = 'AS'+rdata['asn']
-    route['prefix'] = rdata['prefix']
-    validity = dict()
-    validity['state'] = rdata['message']
-    validity['description'] = rdata['message']
-    vrp = dict()
-    vrp['matched'] = list()
-    vrp['unmatched_as'] = list()
-    vrp['unmatched_length'] = list()
-    validity['VRPs'] = vrp
-    vr['route'] = route
-    vr['validity'] = validity
-    ret['validated_route'] = vr
-    return ret
-
 ## public functions ##
 
 ### restful API classes ###
@@ -140,10 +121,14 @@ class RAv1(Resource):
         url, remote_addr, platform, browser = _metadata(request)
         info = [log_ts_str, remote_addr, platform, browser,url,
                 response_data['cache_server'], response_data['prefix'],
-                response_data['asn'], response_data['validity']['status']]
+                response_data['asn'], response_data['validity']['state']]
         _log(info)
-        #return _modify_response(response_data)
-        return response_data['validity']
+        return_data = dict()
+        return_data['route'] = dict()
+        return_data['route']['origin_asn'] = asnum
+        return_data['route']['prefix'] = vdata['prefix']
+        return_data['validity'] = response_data['validity']
+        return {"validated_route":return_data}
 
 class RAv2(Resource):
     def get(self, host):
@@ -161,10 +146,15 @@ class RAv2(Resource):
         url, remote_addr, platform, browser = _metadata(request)
         info = [log_ts_str, remote_addr, platform, browser,url,
                 response_data['cache_server'], response_data['prefix'],
-                response_data['asn'], response_data['validity']['status']]
+                response_data['asn'], response_data['validity']['state']]
         _log(info)
+        return_data = dict()
+        return_data['route'] = dict()
+        return_data['route']['origin_asn'] = asnum
+        return_data['route']['prefix'] = vdata['prefix']
+        return_data['validity'] = response_data['validity']
         #return _modify_response(response_data)
-        return response_data['validity']
+        return {"validated_route":return_data}
 
 ### restful API ###
 api.add_resource(RAv1, '/api/v1/validity/<asnum>/<prefix>/<masklen>')
@@ -206,7 +196,7 @@ def online_validator_v20():
         response_data_min['cache_server'] = response_data['cache_server']
         response_data_min['asn'] = response_data['asn']
         response_data_min['prefix'] = response_data['prefix']
-        response_data_min['message'] = response_data['validity']['status']
+        response_data_min['message'] = response_data['validity']['state']
         response_data_min['code'] = response_data['validity']['code']
         # remap validation code to support old/deprecated plugins
         if response_data['validity']['code'] == 0:      # valid
@@ -226,7 +216,7 @@ def online_validator_v20():
         url, remote_addr, platform, browser = _metadata(request)
         info = [log_ts_str, remote_addr, platform, browser,url,
                 response_data['cache_server'], response_data['prefix'],
-                response_data['asn'], response_data['validity']['status']]
+                response_data['asn'], response_data['validity']['state']]
         _log(info)
     return response_json, response_code
 
@@ -258,7 +248,7 @@ def online_validator_v11():
         response_data_min['cache_server'] = response_data['cache_server']
         response_data_min['asn'] = response_data['asn']
         response_data_min['prefix'] = response_data['prefix']
-        response_data_min['message'] = response_data['validity']['status']
+        response_data_min['message'] = response_data['validity']['state']
         response_data_min['code'] = response_data['validity']['code']
         # remap validation code to support old/deprecated plugins
         if response_data['validity']['code'] == 0:      # valid
@@ -278,7 +268,7 @@ def online_validator_v11():
         url, remote_addr, platform, browser = _metadata(request)
         info = [log_ts_str, remote_addr, platform, browser,url,
                 response_data['cache_server'], response_data['prefix'],
-                response_data['asn'], response_data['validity']['status']]
+                response_data['asn'], response_data['validity']['state']]
         _log(info)
     return response_json, response_code
 
