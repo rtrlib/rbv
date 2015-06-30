@@ -128,7 +128,9 @@ class RAv1(Resource):
         return_data['route'] = dict()
         return_data['route']['origin_asn'] = "AS"+response_data['asn']
         return_data['route']['prefix'] = response_data['prefix']
-
+        return_data['info'] = dict()
+        return_data['info']['origin_asname'] = response_data['asname']
+        return_data['info']['origin_country'] = response_data['country']
         brief = args['brief'].lower()
         if (brief == 'true') or (brief == 'on') or (brief == '1'):
             return_data['validity'] = dict()
@@ -160,6 +162,9 @@ class RAv2(Resource):
         return_data['route'] = dict()
         return_data['route']['origin_asn'] = "AS"+response_data['asn']
         return_data['route']['prefix'] = response_data['prefix']
+        return_data['info'] = dict()
+        return_data['info']['origin_asname'] = response_data['asname']
+        return_data['info']['origin_country'] = response_data['country']
         brief = args['brief'].lower()
         if (brief == 'true') or (brief == 'on') or (brief == '1'):
             return_data['validity'] = dict()

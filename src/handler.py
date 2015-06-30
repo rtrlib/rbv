@@ -1,6 +1,6 @@
 from util import *
 from settings import *
-from ip2as import map_cymru
+from ip2as import *
 
 import json
 import socket
@@ -84,7 +84,7 @@ def validate(vdata):
         if ip != host:
             resolve_url = True
         try:
-            res = map_cymru(ip)
+            res = cymru_mapping(ip)
             prefix = res['prefix']
             asn = res['asn']
         except Exception, e:
@@ -113,7 +113,10 @@ def validate(vdata):
         result['resolved'] = resolve_url
     if resolve_url:
         result['hostname'] = host
+    asinfo = cymru_asinfo(asn)
     result['prefix'] = prefix
     result['asn'] = asn
+    result['asname'] = asinfo['asname']
+    result['country'] = asinfo['country']
     result['cache_server'] = cache_server
     return result
