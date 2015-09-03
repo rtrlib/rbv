@@ -108,7 +108,7 @@ def _get_validity(validation_result_string):
                 rasn, rprefix, rmin_len, rmax_len = r.split()
                 vrp = dict()
                 vrp['asn'] = "AS"+rasn
-                vrp['prefix'] = rprefix+"/"+rmax_len
+                vrp['prefix'] = rprefix+"/"+rmin_len
                 vrp['max_length'] = rmax_len
                 match = True
                 if vasn != rasn:
