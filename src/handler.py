@@ -74,7 +74,7 @@ def validate(vdata):
             host = url.hostname
         # if url w/o scheme and path, but with port
         elif host.find(':') != -1:
-            port = host.find('/')
+            port = host.find(':')
             host = host[:port]
         # if url w/o scheme and port, but with path
         elif host.find('/') != -1:
